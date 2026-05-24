@@ -1,0 +1,61 @@
+package nodes
+
+import (
+	"fmt"
+	"log"
+	"staploy-cli/app/cmds"
+	"staploy-cli/app/proto"
+)
+
+type ListCmdTask struct {
+	cmds.CmdTaskInterface
+	cmds.CmdTask[cmds.ListCmd]
+}
+
+func (a *ListCmdTask) MainCmd() error {
+	packet := a.CreateDefPacket(a.CmdArgs.WorkerId...)
+
+	if a.CmdArgs.Refresh {
+		if len(a.CmdArgs.WorkerId) <= 0 {
+			return fmt.Errorf("using --refresh option requires at least one worker id")
+		}
+		packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_REQ_WORKER_INFO}
+	} else {
+		packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_CONNECTED}
+	}
+
+	response, err := a.PostRequest(packet)
+	if err != nil {
+		log.Fatal(err)
+		return err
+	}
+
+	for i, worker := range response.WorkerResponse {
+		for _, str := range WorkerInfoFormatter(worker.GetWorkerInfo(), a.CmdArgs.Detail, i) {
+			fmt.Print(str)
+		}
+
+		if i < len(response.WorkerResponse)-1 {
+			fmt.Print("\n")
+		}
+	}
+	return nil
+}
+
+func WorkerInfoFormatter(workerInfo *proto.WorkerInfo, detail bool, index int) []string {
+	var workerData []string
+	if detail {
+		workerData = append(workerData, fmt.Sprintf("Worker #%d %s\n", index, workerInfo.GetWorkerId()))
+		workerData = append(workerData, fmt.Sprintf("	Name: %s\n", workerInfo.GetWorkerName()))
+		workerData = append(workerData, fmt.Sprintf("	Cpu: %s (%d Core(s))\n", workerInfo.GetCpuArch().String(), workerInfo.GetCpuCoreCount()))
+		workerData = append(workerData, fmt.Sprintf("	Memory: %d bytes\n", workerInfo.GetMemoryInBytes()))
+		workerData = append(workerData, fmt.Sprintf("	Working directory: %s\n", workerInfo.GetBinLocation()))
+		workerData = append(workerData, fmt.Sprintf("	Additional flags\n"))
+		workerData = append(workerData, fmt.Sprintf("		Default buffer size: %d bytes\n", workerInfo.WorkerFlags.BUFFER_SIZE))
+		workerData = append(workerData, fmt.Sprintf("		Remote shell enabled: %v\n", workerInfo.WorkerFlags.USE_REMOTE_SHELL))
+		workerData = append(workerData, fmt.Sprintf("		Skip executable integrity check: %v\n", workerInfo.WorkerFlags.SKIP_HASH_VERIFICATION))
+	} else {
+		workerData = append(workerData, fmt.Sprintf("Worker #%d %s (%s)\n", index, workerInfo.GetWorkerId(), workerInfo.GetWorkerName()))
+	}
+	return workerData
+}
