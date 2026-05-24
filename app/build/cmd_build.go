@@ -21,24 +21,24 @@ import (
 type PkgCmdTask struct {
 	cmds.CmdTaskInterface
 	cmds.CmdTask[cmds.BuildCmd]
+
+	baseAppInfo       *proto.InstalledAppInfo
+	TargetPathByArch  map[proto.CpuArch]string
+	TargetHashVersion map[proto.CpuArch]*proto.Version
+	ShareExecHash     map[string]bool
 }
 
-var baseAppInfo *proto.InstalledAppInfo
-var TargetPathByArch map[proto.CpuArch]string
-var TargetHashVersion map[proto.CpuArch]*proto.Version
-var ShareExecHash map[string]bool
-
 func (a *PkgCmdTask) MainCmd() error {
-	TargetPathByArch = make(map[proto.CpuArch]string)
-	TargetHashVersion = make(map[proto.CpuArch]*proto.Version)
-	ShareExecHash = make(map[string]bool)
+	a.TargetPathByArch = make(map[proto.CpuArch]string)
+	a.TargetHashVersion = make(map[proto.CpuArch]*proto.Version)
+	a.ShareExecHash = make(map[string]bool)
 
 	err := a.preCheckDirExists()
 	if err != nil {
 		return err
 	}
 
-	baseAppInfo = &proto.InstalledAppInfo{
+	a.baseAppInfo = &proto.InstalledAppInfo{
 		App: &proto.AppInfo{
 			AppName:        a.CmdArgs.AppName,
 			AppDescription: &a.CmdArgs.AppDescription,
@@ -87,7 +87,7 @@ func (a *PkgCmdTask) startPacking() error {
 		}
 	}(tw)
 
-	for arch := range TargetPathByArch {
+	for arch := range a.TargetPathByArch {
 		if err := a.calculateVerHash(arch); err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func (a *PkgCmdTask) writePkgHeader(tw *tar.Writer) error {
 	header := &proto.PackageHeader{
 		FormatVersion: consts.PACKAGE_FORMAT_VERSION,
 		ShareOnly:     false,
-		PackageInfo:   baseAppInfo,
+		PackageInfo:   a.baseAppInfo,
 	}
 
 	content, err := protojson.Marshal(header)
@@ -131,18 +131,18 @@ func (a *PkgCmdTask) writePkgHeader(tw *tar.Writer) error {
 }
 
 func (a *PkgCmdTask) calculateVerHash(arch proto.CpuArch) error {
-	srcPath := TargetPathByArch[arch]
+	srcPath := a.TargetPathByArch[arch]
 	var binaries []*proto.BinaryInfo
 
 	for _, execFileName := range a.CmdArgs.Executable {
-		hasSharedExec, ok := ShareExecHash[execFileName]
+		hasSharedExec, ok := a.ShareExecHash[execFileName]
 		if arch == proto.CpuArch_UNKNOWN || !(ok && hasSharedExec) {
 			fileName := filepath.Join(srcPath, execFileName)
 			fileHash, err := getSha1Hash(fileName)
 
 			if err != nil {
 				if arch == proto.CpuArch_UNKNOWN && os.IsNotExist(err) {
-					ShareExecHash[execFileName] = false
+					a.ShareExecHash[execFileName] = false
 					continue
 				}
 				return err
@@ -154,12 +154,12 @@ func (a *PkgCmdTask) calculateVerHash(arch proto.CpuArch) error {
 			})
 
 			if arch == proto.CpuArch_UNKNOWN {
-				ShareExecHash[execFileName] = true
+				a.ShareExecHash[execFileName] = true
 			}
 		}
 	}
 
-	TargetHashVersion[arch] = &proto.Version{
+	a.TargetHashVersion[arch] = &proto.Version{
 		EntryBinaries: binaries,
 	}
 	return nil
@@ -189,8 +189,8 @@ func getSha1Hash(filePath string) (string, error) {
 }
 
 func (a *PkgCmdTask) addArchDir(arch proto.CpuArch, tw *tar.Writer) error {
-	srcPath := TargetPathByArch[arch]
-	version := TargetHashVersion[arch]
+	srcPath := a.TargetPathByArch[arch]
+	version := a.TargetHashVersion[arch]
 
 	tarDirPath := arch.String()
 	if //goland:noinspection GoDfaConstantCondition
@@ -273,68 +273,43 @@ func (a *PkgCmdTask) addArchDir(arch proto.CpuArch, tw *tar.Writer) error {
 }
 
 func (a *PkgCmdTask) preCheckDirExists() error {
-	result, err := checkDirExists(a.CmdArgs.OutputDir)
-	if err != nil || !result {
-		return fmt.Errorf("output dir doesn't exists: %s", a.CmdArgs.OutputDir)
+	if exists, err := checkDirExists(a.CmdArgs.OutputDir); err != nil || !exists {
+		return fmt.Errorf("output dir doesn't exist: %s", a.CmdArgs.OutputDir)
 	}
 
 	oneOfTargetSpecified := false
-	checkTask := func(path string, arch proto.CpuArch) error {
-		result, err := checkDirExists(path)
+	targets := []struct {
+		path string
+		arch proto.CpuArch
+	}{
+		{a.CmdArgs.I386, proto.CpuArch_i386},
+		{a.CmdArgs.X86_64, proto.CpuArch_x86_64},
+		{a.CmdArgs.Arm, proto.CpuArch_arm},
+		{a.CmdArgs.Aarch64, proto.CpuArch_aarch64},
+		{a.CmdArgs.Riscv32, proto.CpuArch_riscv32},
+		{a.CmdArgs.Riscv64, proto.CpuArch_riscv64},
+		{a.CmdArgs.Mipsel, proto.CpuArch_mipsel},
+		{a.CmdArgs.Mips64el, proto.CpuArch_mips64el},
+	}
+
+	for _, t := range targets {
+		exists, err := checkDirExists(t.path)
 		if err != nil {
 			return err
-		} else if result {
-			oneOfTargetSpecified = true
-			TargetPathByArch[arch] = path
 		}
-		return nil
+		if exists {
+			oneOfTargetSpecified = true
+			a.TargetPathByArch[t.arch] = t.path
+		}
 	}
 
-	err = checkTask(a.CmdArgs.I386, proto.CpuArch_i386)
+	shareExists, err := checkDirExists(a.CmdArgs.Share)
 	if err != nil {
 		return err
 	}
 
-	err = checkTask(a.CmdArgs.X86_64, proto.CpuArch_x86_64)
-	if err != nil {
-		return err
-	}
-
-	err = checkTask(a.CmdArgs.Arm, proto.CpuArch_arm)
-	if err != nil {
-		return err
-	}
-
-	err = checkTask(a.CmdArgs.Aarch64, proto.CpuArch_aarch64)
-	if err != nil {
-		return err
-	}
-
-	err = checkTask(a.CmdArgs.Riscv32, proto.CpuArch_riscv32)
-	if err != nil {
-		return err
-	}
-
-	err = checkTask(a.CmdArgs.Riscv64, proto.CpuArch_riscv64)
-	if err != nil {
-		return err
-	}
-
-	err = checkTask(a.CmdArgs.Mipsel, proto.CpuArch_mipsel)
-	if err != nil {
-		return err
-	}
-
-	err = checkTask(a.CmdArgs.Mips64el, proto.CpuArch_mips64el)
-	if err != nil {
-		return err
-	}
-
-	result, err = checkDirExists(a.CmdArgs.Share)
-	if err != nil {
-		return err
-	} else if result {
-		TargetPathByArch[proto.CpuArch_UNKNOWN] = a.CmdArgs.Share
+	if shareExists {
+		a.TargetPathByArch[proto.CpuArch_UNKNOWN] = a.CmdArgs.Share
 	}
 
 	if !oneOfTargetSpecified {
