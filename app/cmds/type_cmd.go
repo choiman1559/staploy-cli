@@ -80,17 +80,13 @@ func (a *CmdTask[T]) PostRequestOnly(requestPacket *proto.RequestPacket) error {
 	return nil
 }
 
-//goland:noinspection HttpUrlsUsage
 func (a *CmdTask[T]) PostRequest(requestPacket *proto.RequestPacket) (*proto.ResponsePacket, error) {
-	var paths = fmt.Sprintf(consts.APIRouteSchema, "v1", consts.ConnTypeAdmin)
-	var addr = fmt.Sprintf("http://%s:%d%s", a.DefaultArgs.Address, a.DefaultArgs.Port, paths)
-
 	data, err := protojson.Marshal(requestPacket)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Post(addr, "application/json", bytes.NewBuffer(data))
+	resp, err := http.Post(a.GetServerAddr(), "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
@@ -113,4 +109,11 @@ func (a *CmdTask[T]) PostRequest(requestPacket *proto.RequestPacket) (*proto.Res
 		return nil, err
 	}
 	return responsePacket, nil
+}
+
+//goland:noinspection HttpUrlsUsage
+func (a *CmdTask[T]) GetServerAddr() string {
+	var paths = fmt.Sprintf(consts.APIRouteSchema, "v1", consts.ConnTypeAdmin)
+	var addr = fmt.Sprintf("http://%s:%d%s", a.DefaultArgs.Address, a.DefaultArgs.Port, paths)
+	return addr
 }

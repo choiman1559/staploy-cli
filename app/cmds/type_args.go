@@ -7,15 +7,19 @@ package cmds
 // upload 		(TYPE_APP_BLOB)
 
 type CreateCmd struct {
+	//TODO
 }
 
 type DeleteCmd struct {
+	//TODO
 }
 
 type AppsCmd struct {
+	//TODO
 }
 
 type UploadCmd struct {
+	PackageFile string `arg:"-f,--file" help:"package file to upload"`
 }
 
 // ### TaskNodeTypes
@@ -53,12 +57,21 @@ type DisconnCmd struct {
 // set 			(TYPE_DEPLOY_SET_VERSION)
 
 type PushCmd struct {
+	WorkerId []string `arg:"-w,--worker-id,required" help:"worker id to install new package"`
+	AppName  string   `arg:"-n,--app-name, required" help:"name of app to push"`
+	Version  string   `arg:"-e,--version,required" help:"version of app to push"`
 }
 
 type RemoveCmd struct {
+	WorkerId []string `arg:"-w,--worker-id,required" help:"worker id to remove package"`
+	AppName  string   `arg:"-n,--app-name, required" help:"name of app to remove"`
+	Version  string   `arg:"-e,--version" help:"version of app to remove, remove all versions if not specified"`
 }
 
 type SetCmd struct {
+	WorkerId []string `arg:"-w,--worker-id,required" help:"worker id to set package"`
+	AppName  string   `arg:"-n,--app-name, required" help:"name of app to set"`
+	Version  string   `arg:"-e,--version" help:"version of app to set, disable package if not specified"`
 }
 
 type BuildCmd struct {

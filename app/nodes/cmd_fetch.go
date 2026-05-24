@@ -45,7 +45,7 @@ func AppInfoFormatter(workerInfo *proto.WorkerInfo, detail bool) []string {
 		workerData = append(workerData, fmt.Sprintf("\tDescription: %s\n", safeBlankStr(data.GetApp().GetAppDescription())))
 
 		if data.CurrentVersion != nil {
-			workerData = append(workerData, fmt.Sprintf("\tCurrent Version: %s\n", data.GetCurrentVersion().GetVersionName()))
+			workerData = append(workerData, fmt.Sprintf("\tCurrent Version: %s\n", safeBlankStr(data.GetCurrentVersion().GetVersionName())))
 		}
 
 		workerData = append(workerData, fmt.Sprintf("\tAvailable Versions:\n"))

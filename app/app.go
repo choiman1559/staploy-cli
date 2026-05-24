@@ -2,14 +2,17 @@ package app
 
 import (
 	"log"
+	"staploy-cli/app/apps"
 	"staploy-cli/app/build"
 	"staploy-cli/app/cmds"
+	"staploy-cli/app/deploy"
 	"staploy-cli/app/nodes"
 	"staploy-cli/app/proto"
 
 	"github.com/alexflint/go-arg"
 )
 
+//goland:noinspection DuplicatedCode
 func HandleProcessInvoke() {
 	arg.MustParse(&cmds.Args)
 
@@ -21,34 +24,73 @@ func HandleProcessInvoke() {
 
 	var taskInterface cmds.CmdTaskInterface
 
-	if cmds.Args.Build != nil {
-		cmdTask := &build.PkgCmdTask{}
-		cmdTask.Init(defaultArgs, *cmds.Args.Build, proto.TaskGroup_TASK_NONE)
-		taskInterface = cmdTask
+	checkList := []struct {
+		isSet bool
+		init  func() cmds.CmdTaskInterface
+	}{
+		/// Build Tasks
+		{cmds.Args.Build != nil, func() cmds.CmdTaskInterface {
+			t := &build.PkgCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Build, proto.TaskGroup_TASK_NONE)
+			return t
+		}},
+
+		/// TaskAppsTypes
+		{cmds.Args.Upload != nil, func() cmds.CmdTaskInterface {
+			t := &apps.UploadCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Upload, proto.TaskGroup_TASK_MANAGE_APPS)
+			return t
+		}},
+
+		/// TaskNodeTypes
+		{cmds.Args.List != nil, func() cmds.CmdTaskInterface {
+			t := &nodes.ListCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.List, proto.TaskGroup_TASK_MANAGE_NODE)
+			return t
+		}},
+		{cmds.Args.Fetch != nil, func() cmds.CmdTaskInterface {
+			t := &nodes.FetchCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Fetch, proto.TaskGroup_TASK_MANAGE_NODE)
+			return t
+		}},
+		{cmds.Args.Bash != nil, func() cmds.CmdTaskInterface {
+			t := &nodes.BashCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Bash, proto.TaskGroup_TASK_MANAGE_NODE)
+			return t
+		}},
+		{cmds.Args.Disconn != nil, func() cmds.CmdTaskInterface {
+			t := &nodes.DisConnCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Disconn, proto.TaskGroup_TASK_MANAGE_NODE)
+			return t
+		}},
+
+		/// TaskDeployTypes
+		{cmds.Args.Push != nil, func() cmds.CmdTaskInterface {
+			t := &deploy.PushCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Push, proto.TaskGroup_TASK_DEPLOY)
+			return t
+		}},
+		{cmds.Args.Remove != nil, func() cmds.CmdTaskInterface {
+			t := &deploy.RemoveCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Remove, proto.TaskGroup_TASK_DEPLOY)
+			return t
+		}},
+		{cmds.Args.Set != nil, func() cmds.CmdTaskInterface {
+			t := &deploy.SetCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Set, proto.TaskGroup_TASK_DEPLOY)
+			return t
+		}},
 	}
 
-	if cmds.Args.List != nil {
-		cmdTask := &nodes.ListCmdTask{}
-		cmdTask.Init(defaultArgs, *cmds.Args.List, proto.TaskGroup_TASK_MANAGE_NODE)
-		taskInterface = cmdTask
+	for _, item := range checkList {
+		if item.isSet {
+			taskInterface = item.init()
+			break
+		}
 	}
 
-	if cmds.Args.Fetch != nil {
-		cmdTask := &nodes.FetchCmdTask{}
-		cmdTask.Init(defaultArgs, *cmds.Args.Fetch, proto.TaskGroup_TASK_MANAGE_NODE)
-		taskInterface = cmdTask
-	}
-
-	if cmds.Args.Bash != nil {
-		cmdTask := &nodes.BashCmdTask{}
-		cmdTask.Init(defaultArgs, *cmds.Args.Bash, proto.TaskGroup_TASK_MANAGE_NODE)
-		taskInterface = cmdTask
-	}
-
-	if cmds.Args.Disconn != nil {
-		cmdTask := &nodes.DisConnCmdTask{}
-		cmdTask.Init(defaultArgs, *cmds.Args.Disconn, proto.TaskGroup_TASK_MANAGE_NODE)
-		taskInterface = cmdTask
+	if taskInterface == nil {
+		log.Fatal("no command arg specified")
 	}
 
 	err := taskInterface.MainCmd()
