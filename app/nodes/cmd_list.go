@@ -35,7 +35,7 @@ func (a *ListCmdTask) MainCmd() error {
 			fmt.Print(str)
 		}
 
-		if i < len(response.WorkerResponse)-1 {
+		if a.CmdArgs.Detail && i < len(response.WorkerResponse)-1 {
 			fmt.Print("\n")
 		}
 	}

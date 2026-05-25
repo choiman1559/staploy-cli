@@ -6,6 +6,7 @@
         <language minSize="57" name="Go" />
       </Languages>
     </inspection_tool>
+    <inspection_tool class="GoNameStartsWithPackageName" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="GoSnakeCaseUsage" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
   </profile>
 </component>

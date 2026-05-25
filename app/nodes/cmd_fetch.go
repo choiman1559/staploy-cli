@@ -50,17 +50,17 @@ func AppInfoFormatter(workerInfo *proto.WorkerInfo, detail bool) []string {
 
 		workerData = append(workerData, fmt.Sprintf("\tAvailable Versions:\n"))
 		for _, version := range data.GetAvailableVersion() {
-			workerData = append(workerData, fmt.Sprintf("\t\t\tVersion: %s\n", version.GetVersionName()))
+			workerData = append(workerData, fmt.Sprintf("\t\tVersion: %s\n", version.GetVersionName()))
 
 			if detail {
 				if version.GetLibVersion() != "" {
-					workerData = append(workerData, fmt.Sprintf("\t\t\t\tUsed Library: %s\n", safeBlankStr(version.GetLibVersion())))
+					workerData = append(workerData, fmt.Sprintf("\t\t\tUsed Library: %s\n", safeBlankStr(version.GetLibVersion())))
 				}
 
 				if len(version.GetEntryBinaries()) > 0 {
-					workerData = append(workerData, fmt.Sprintf("\t\t\t\tReported entry binaries:\n"))
+					workerData = append(workerData, fmt.Sprintf("\t\t\tReported entry binaries:\n"))
 					for i, execs := range version.GetEntryBinaries() {
-						workerData = append(workerData, fmt.Sprintf("\t\t\t\t\tBinary #%d: %s (Hash: %s)\n", i, execs.GetName(), execs.GetHash()))
+						workerData = append(workerData, fmt.Sprintf("\t\t\t\tBinary #%d: %s (Hash: %s)\n", i, execs.GetName(), execs.GetHash()))
 					}
 				}
 			}

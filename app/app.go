@@ -36,6 +36,21 @@ func HandleProcessInvoke() {
 		}},
 
 		/// TaskAppsTypes
+		{cmds.Args.Create != nil, func() cmds.CmdTaskInterface {
+			t := &apps.CreateCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Create, proto.TaskGroup_TASK_MANAGE_APPS)
+			return t
+		}},
+		{cmds.Args.Delete != nil, func() cmds.CmdTaskInterface {
+			t := &apps.DeleteCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Delete, proto.TaskGroup_TASK_MANAGE_APPS)
+			return t
+		}},
+		{cmds.Args.Apps != nil, func() cmds.CmdTaskInterface {
+			t := &apps.AppsCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Apps, proto.TaskGroup_TASK_MANAGE_APPS)
+			return t
+		}},
 		{cmds.Args.Upload != nil, func() cmds.CmdTaskInterface {
 			t := &apps.UploadCmdTask{}
 			t.Init(defaultArgs, *cmds.Args.Upload, proto.TaskGroup_TASK_MANAGE_APPS)

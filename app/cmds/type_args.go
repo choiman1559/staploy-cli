@@ -7,19 +7,21 @@ package cmds
 // upload 		(TYPE_APP_BLOB)
 
 type CreateCmd struct {
-	//TODO
+	AppName        string `arg:"-n,--app-name,required" help:"name of the application (warning: cannot be changed once created)"`
+	AppDescription string `arg:"-d,--description" help:"Specifies the description of the app"`
 }
 
 type DeleteCmd struct {
-	//TODO
+	AppName     string   `arg:"-n,--app-name,required" help:"name of the application to delete"`
+	VersionName []string `arg:"-e,--version-name" help:"names of version to delete"`
 }
 
 type AppsCmd struct {
-	//TODO
+	AppName string `arg:"-n,--app-name" help:"name of the application to list"`
 }
 
 type UploadCmd struct {
-	PackageFile string `arg:"-f,--file" help:"package file to upload"`
+	PackageFile string `arg:"-f,--file,required" help:"package file to upload"`
 }
 
 // ### TaskNodeTypes
@@ -85,12 +87,11 @@ type BuildCmd struct {
 	Mips64el string `arg:"--mips64el" help:"specifies directory of mips64el executable"`
 	Share    string `arg:"--share" help:"specifies directory of shared executable and resources"`
 
-	Executable     []string `arg:"-e,separate" help:"specifies names of executable and resources that will be linked on target worker"`
-	AppName        string   `arg:"-m,--app-name,required" help:"specifies package name"`
-	AppDescription string   `arg:"-d,--description" help:"specifies package description"`
-	VersionName    string   `arg:"-n,--version-name,required" help:"specifies package version name"`
-	LibVersion     string   `arg:"--lib-version" help:"specifies package lib version"`
-	OutputDir      string   `arg:"-o,--output-dir" help:"specifies directory of output"`
+	Executable  []string `arg:"-e,separate" help:"specifies names of executable and resources that will be linked on target worker"`
+	AppName     string   `arg:"-m,--app-name,required" help:"specifies package name"`
+	VersionName string   `arg:"-n,--version-name,required" help:"specifies package version name"`
+	LibVersion  string   `arg:"--lib-version" help:"specifies package lib version"`
+	OutputDir   string   `arg:"-o,--output-dir" help:"specifies directory of output"`
 }
 
 var Args struct {
@@ -98,7 +99,7 @@ var Args struct {
 	Port    int    `arg:"-p,env:STAPLOY_HOST_PORT" help:"overrides server port. can be preset with STAPLOY_HOST_PORT environment variable"`
 	Verbose bool   `arg:"-v,--verbose" help:"verbose output"`
 
-	Create *CreateCmd `arg:"subcommand:create" help:"create a new application"`
+	Create *CreateCmd `arg:"subcommand:create" help:"create newly or update information of application"`
 	Delete *DeleteCmd `arg:"subcommand:delete" help:"delete a application"`
 	Apps   *AppsCmd   `arg:"subcommand:apps" help:"list all application or versions available on remote server"`
 	Upload *UploadCmd `arg:"subcommand:upload" help:"upload a distributable package"`

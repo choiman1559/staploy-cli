@@ -40,8 +40,7 @@ func (a *PkgCmdTask) MainCmd() error {
 
 	a.baseAppInfo = &proto.InstalledAppInfo{
 		App: &proto.AppInfo{
-			AppName:        a.CmdArgs.AppName,
-			AppDescription: &a.CmdArgs.AppDescription,
+			AppName: a.CmdArgs.AppName,
 		},
 		CurrentVersion: &proto.Version{
 			VersionName: a.CmdArgs.VersionName,
