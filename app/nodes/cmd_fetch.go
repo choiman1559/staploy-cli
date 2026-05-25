@@ -31,6 +31,10 @@ func (a *FetchCmdTask) MainCmd() error {
 		return err
 	}
 
+	if len(responsePacket.GetWorkerResponse()) < 1 {
+		return fmt.Errorf("fetch response is empty. check worker-id is correct")
+	}
+
 	for _, str := range AppInfoFormatter(responsePacket.GetWorkerResponse()[0].GetWorkerInfo(), a.CmdArgs.Detail) {
 		fmt.Print(str)
 	}
