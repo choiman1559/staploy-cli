@@ -144,7 +144,7 @@ func (a *PkgCmdTask) calculateVerHash(arch proto.CpuArch) error {
 					a.ShareExecHash[execFileName] = false
 					continue
 				}
-				return err
+				return fmt.Errorf("can't calculate hash for executable \"%s\": %v", execFileName, err)
 			}
 
 			binaries = append(binaries, &proto.BinaryInfo{

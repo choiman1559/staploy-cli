@@ -36,10 +36,14 @@ func (task *SetCmdTask) MainCmd() error {
 		}
 
 		if response.GetStatus() == consts.StatusOK {
-			if versionSpecified {
-				log.Printf("setting triggered package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
+			if response.GetWorkerResponse()[0].GetTaskResult().GetResultSuccessful() {
+				if versionSpecified {
+					log.Printf("setting triggered package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
+				} else {
+					log.Printf("untriggered package %s at worker %s", task.CmdArgs.AppName, workerId)
+				}
 			} else {
-				log.Printf("untriggered package %s at worker %s", task.CmdArgs.AppName, workerId)
+				log.Printf("error: %v", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
 			}
 		} else {
 			log.Printf("failed to setting trigger for %s at worker %s", task.CmdArgs.AppName, workerId)
