@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"staploy-cli/app/consts"
 	"staploy-cli/app/proto"
@@ -27,9 +28,10 @@ type CmdTaskInterface interface {
 
 type DefaultArgs struct {
 	CmdTaskInterface
-	Address string
-	Port    int
-	Verbose bool
+	Address       string
+	Port          int
+	Verbose       bool
+	UseWorkerName bool
 }
 
 type CmdTask[T CmdTypes] struct {
@@ -45,6 +47,37 @@ func (a *CmdTask[T]) Init(defArgs DefaultArgs, cmdArgs T, group proto.TaskGroup)
 }
 
 func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
+	if !a.DefaultArgs.UseWorkerName {
+		return a.CreateDefPacketIdOnly(workers...)
+	}
+
+	workerListPacket := a.CreateDefPacketIdOnly()
+	workerListPacket.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE
+	workerListPacket.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_CONNECTED}
+
+	response, err := a.PostRequest(workerListPacket)
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+
+	var workerRealIds []string
+	for _, workerInfo := range response.WorkerResponse {
+		for _, workerRaw := range workers {
+			if workerInfo.GetWorkerInfo().GetWorkerId() == workerRaw {
+				workerRealIds = append(workerRealIds, workerRaw)
+			} else if workerInfo.GetWorkerInfo().GetWorkerName() == workerRaw {
+				workerRealIds = append(workerRealIds, workerInfo.GetWorkerInfo().GetWorkerId())
+			} else {
+				log.Fatal(fmt.Errorf("cannot determine given element (%s) is id or name. check given id worker is connected to server", workerRaw))
+			}
+		}
+	}
+
+	return a.CreateDefPacketIdOnly(workerRealIds...)
+}
+
+func (a *CmdTask[T]) CreateDefPacketIdOnly(workers ...string) *proto.RequestPacket {
 	packet := &proto.RequestPacket{
 		TaskGroup: a.TaskGroups,
 	}

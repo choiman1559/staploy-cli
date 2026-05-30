@@ -65,9 +65,10 @@ type PushCmd struct {
 }
 
 type RemoveCmd struct {
-	WorkerId []string `arg:"-w,--worker-id,required" help:"worker id to remove package"`
-	AppName  string   `arg:"-n,--app-name, required" help:"name of app to remove"`
-	Version  string   `arg:"-e,--version" help:"version of app to remove, remove all versions if not specified"`
+	WorkerId   []string `arg:"-w,--worker-id,required" help:"worker id to remove package"`
+	AppName    string   `arg:"-n,--app-name" help:"name of app to remove"`
+	Version    string   `arg:"-e,--version" help:"version of app to remove, remove all versions if not specified"`
+	AutoRemove bool     `arg:"--autoremove" help:"automatically remove unused versions"`
 }
 
 type SetCmd struct {
@@ -97,6 +98,7 @@ type BuildCmd struct {
 var Args struct {
 	Address string `arg:"-a,env:STAPLOY_HOST_ADDR" help:"overrides server address. can be preset with STAPLOY_HOST_ADDR environment variable"`
 	Port    int    `arg:"-p,env:STAPLOY_HOST_PORT" help:"overrides server port. can be preset with STAPLOY_HOST_PORT environment variable"`
+	UseName bool   `arg:"--use-name,env:STAPLOY_USE_WORKER_NAME" help:"allows using name instead of worker uuid"`
 	Verbose bool   `arg:"-v,--verbose" help:"verbose output"`
 
 	Create *CreateCmd `arg:"subcommand:create" help:"create newly or update information of application"`

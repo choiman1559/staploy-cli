@@ -1,9 +1,12 @@
 package nodes
 
 import (
+	"bytes"
 	"fmt"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/proto"
+	"strings"
+	"text/tabwriter"
 )
 
 type FetchCmdTask struct {
@@ -15,6 +18,7 @@ func (a *FetchCmdTask) MainCmd() error {
 	packet := a.CreateDefPacket(a.CmdArgs.WorkerId)
 	packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_REQ_APP_INFO}
 
+	var isDetail = a.CmdArgs.Detail
 	if a.CmdArgs.AppName != "" {
 		appInfo := proto.AppInfoFetch{App: &proto.AppInfo{AppName: a.CmdArgs.AppName}}
 		if len(a.CmdArgs.VersionName) > 0 {
@@ -24,6 +28,8 @@ func (a *FetchCmdTask) MainCmd() error {
 		}
 
 		packet.AppInfoFetch = append(packet.GetAppInfoFetch(), &appInfo)
+	} else {
+		isDetail = false
 	}
 
 	responsePacket, err := a.PostRequest(packet)
@@ -35,7 +41,7 @@ func (a *FetchCmdTask) MainCmd() error {
 		return fmt.Errorf("fetch response is empty. check worker-id is correct")
 	}
 
-	for _, str := range AppInfoFormatter(responsePacket.GetWorkerResponse()[0].GetWorkerInfo(), a.CmdArgs.Detail) {
+	for _, str := range AppInfoFormatter(responsePacket.GetWorkerResponse()[0].GetWorkerInfo(), isDetail) {
 		fmt.Print(str)
 	}
 	return nil
@@ -45,33 +51,99 @@ func AppInfoFormatter(workerInfo *proto.WorkerInfo, detail bool) []string {
 	var workerData []string
 
 	for _, data := range workerInfo.InstalledApp {
-		workerData = append(workerData, fmt.Sprintf("App %s\n", data.GetApp().GetAppName()))
-		workerData = append(workerData, fmt.Sprintf("\tDescription: %s\n", safeBlankStr(data.GetApp().GetAppDescription())))
+		var sb strings.Builder
+		appName := data.GetApp().GetAppName()
+		appDesc := safeBlankStr(data.GetApp().GetAppDescription())
 
-		if data.CurrentVersion != nil {
-			workerData = append(workerData, fmt.Sprintf("\tCurrent Version: %s\n", safeBlankStr(data.GetCurrentVersion().GetVersionName())))
+		sb.WriteString(fmt.Sprintf("App: %s\n", appName))
+		sb.WriteString(fmt.Sprintf(" └─ Description: %s\n", appDesc))
+
+		currentVer := "(none)"
+		if data.CurrentVersion != nil && data.CurrentVersion.VersionName != "" {
+			currentVer = data.GetCurrentVersion().GetVersionName()
+		}
+		sb.WriteString(fmt.Sprintf(" └─ Current Version: %s\n\n", currentVer))
+
+		var tableBuf bytes.Buffer
+		w := tabwriter.NewWriter(&tableBuf, 0, 0, 3, ' ', 0)
+
+		if detail {
+			_, err := fmt.Fprintln(w, "   VERSION\tSTATUS\tLIB RUNTIME\tENTRY BINARIES (NAME / HASH)")
+			if err != nil {
+				return nil
+			}
+		} else {
+			_, err := fmt.Fprintln(w, "   VERSION\tSTATUS")
+			if err != nil {
+				return nil
+			}
 		}
 
-		workerData = append(workerData, fmt.Sprintf("\tAvailable Versions:\n"))
-		for _, version := range data.GetAvailableVersion() {
-			workerData = append(workerData, fmt.Sprintf("\t\tVersion: %s\n", version.GetVersionName()))
+		availableVersions := data.GetAvailableVersion()
+		if len(availableVersions) == 0 {
+			_, err := fmt.Fprintln(w, "   (No available versions reported from server)")
+			if err != nil {
+				return nil
+			}
+		}
+
+		for _, version := range availableVersions {
+			verName := version.GetVersionName()
+
+			status := "-"
+			if data.CurrentVersion != nil && verName == currentVer {
+				status = "[Active]"
+			}
 
 			if detail {
-				if version.GetLibVersion() != "" {
-					workerData = append(workerData, fmt.Sprintf("\t\t\tUsed Library: %s\n", safeBlankStr(version.GetLibVersion())))
-				}
+				libVer := safeBlankStr(version.GetLibVersion())
+				execs := version.GetEntryBinaries()
 
-				if len(version.GetEntryBinaries()) > 0 {
-					workerData = append(workerData, fmt.Sprintf("\t\t\tReported entry binaries:\n"))
-					for i, execs := range version.GetEntryBinaries() {
-						workerData = append(workerData, fmt.Sprintf("\t\t\t\tBinary #%d: %s (Hash: %s)\n", i, execs.GetName(), execs.GetHash()))
+				if len(execs) == 0 {
+					_, err := fmt.Fprintf(w, "   %s\t%s\t%s\t%s\n", verName, status, libVer, "(none)")
+					if err != nil {
+						return nil
 					}
+				} else {
+					firstBin := fmt.Sprintf("%s (%s)", execs[0].GetName(), shortHash(execs[0].GetHash()))
+					_, err := fmt.Fprintf(w, "   %s\t%s\t%s\t%s\n", verName, status, libVer, firstBin)
+					if err != nil {
+						return nil
+					}
+
+					for i := 1; i < len(execs); i++ {
+						nextBin := fmt.Sprintf("%s (%s)", execs[i].GetName(), shortHash(execs[i].GetHash()))
+						_, err := fmt.Fprintf(w, "   \t\t\t%s\n", nextBin)
+						if err != nil {
+							return nil
+						}
+					}
+				}
+			} else {
+				_, err := fmt.Fprintf(w, "   %s\t%s\n", verName, status)
+				if err != nil {
+					return nil
 				}
 			}
 		}
-	}
 
+		err := w.Flush()
+		if err != nil {
+			return nil
+		}
+		sb.Write(tableBuf.Bytes())
+		sb.WriteString("\n")
+
+		workerData = append(workerData, sb.String())
+	}
 	return workerData
+}
+
+func shortHash(hash string) string {
+	if len(hash) > 10 {
+		return hash[:10] + "..."
+	}
+	return hash
 }
 
 func safeBlankStr(str string) string {

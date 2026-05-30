@@ -17,9 +17,10 @@ func HandleProcessInvoke() {
 	arg.MustParse(&cmds.Args)
 
 	defaultArgs := cmds.DefaultArgs{
-		Address: cmds.Args.Address,
-		Port:    cmds.Args.Port,
-		Verbose: cmds.Args.Verbose,
+		Address:       cmds.Args.Address,
+		Port:          cmds.Args.Port,
+		Verbose:       cmds.Args.Verbose,
+		UseWorkerName: cmds.Args.UseName,
 	}
 
 	var taskInterface cmds.CmdTaskInterface

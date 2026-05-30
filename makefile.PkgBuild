@@ -9,7 +9,7 @@ buildAll: $(ARCHES)
 buildPkg: buildAll createPkg
 
 $(ARCHES):
-	GOOS=linux GOARCH=$@ go build -ldflags="-s -w" -o $(OUT_DIR)/$@/staploy-cli staploy-cli
+	CGO_ENABLED=0 GOOS=linux GOARCH=$@ go build -ldflags="-s -w" -o $(OUT_DIR)/$@/staploy-cli staploy-cli
 
 createPkg:
 	$(CLI_TOOL) build \
