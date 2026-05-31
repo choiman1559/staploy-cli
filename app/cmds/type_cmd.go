@@ -62,21 +62,32 @@ func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
 		os.Exit(1)
 	}
 
-	var workerRealIds []string
+	workerRealIds := make(map[string]string)
 	for _, workerInfo := range response.WorkerResponse {
-		for _, workerRaw := range workers {
-			if workerInfo.GetWorkerInfo().GetWorkerId() == workerRaw {
-				workerRealIds = append(workerRealIds, workerRaw)
-			} else if workerInfo.GetWorkerInfo().GetWorkerName() == workerRaw {
-				workerRealIds = append(workerRealIds, workerInfo.GetWorkerInfo().GetWorkerId())
+	perWorkerCheck:
+		for _, workerIdOrName := range workers {
+			if workerInfo.GetWorkerInfo().GetWorkerId() == workerIdOrName {
+				workerRealIds[workerIdOrName] = workerInfo.GetWorkerInfo().GetWorkerName()
+			} else if workerInfo.GetWorkerInfo().GetWorkerName() == workerIdOrName {
+				for workerExistsId, workerExistsName := range workerRealIds {
+					if workerInfo.GetWorkerInfo().GetWorkerName() == workerExistsName {
+						logger.Warn("Possible duplication of name \"%s\" between %s and %s, Ignoring first one", workerIdOrName, workerInfo.GetWorkerInfo().GetWorkerId(), workerExistsId)
+						continue perWorkerCheck
+					}
+				}
+				workerRealIds[workerInfo.GetWorkerInfo().GetWorkerId()] = workerIdOrName
 			} else {
-				logger.Warn("cannot determine given element (%s) is id or name. check given id worker is connected to server", workerRaw)
+				logger.Error("Cannot determine given element (%s) is id or name. check given id worker is connected to server", workerIdOrName)
 				os.Exit(1)
 			}
 		}
 	}
 
-	return a.CreateDefPacketIdOnly(workerRealIds...)
+	keys := make([]string, 0, len(workerRealIds))
+	for k := range workerRealIds {
+		keys = append(keys, k)
+	}
+	return a.CreateDefPacketIdOnly(keys...)
 }
 
 func (a *CmdTask[T]) CreateDefPacketIdOnly(workers ...string) *proto.RequestPacket {
