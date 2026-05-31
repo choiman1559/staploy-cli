@@ -2,9 +2,9 @@ package deploy
 
 import (
 	"fmt"
-	"log"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
 
@@ -32,7 +32,7 @@ func (task *RemoveCmdTask) RemoveAuto() error {
 		}
 
 		if len(responsePacket.GetWorkerResponse()) < 1 {
-			fmt.Printf("fetch response for worker %s is empty. check worker-id is correct\n", workerId)
+			logger.Error("Fetch response for worker %s is empty. check worker-id is correct\n", workerId)
 			continue
 		}
 
@@ -54,7 +54,7 @@ func (task *RemoveCmdTask) RemoveAuto() error {
 				for _, version := range v.GetAvailableVersion() {
 					if version.GetVersionName() != v.GetCurrentVersion().GetVersionName() {
 						appInfo.AppVersion = append(appInfo.GetAppVersion(), version)
-						log.Printf("removing unused package %s (%s) at worker %s", v.GetApp().GetAppName(), version.GetVersionName(), workerId)
+						logger.Process("Removing unused package %s (%s) at worker %s", v.GetApp().GetAppName(), version.GetVersionName(), workerId)
 					}
 				}
 				removePacket.AppInfoFetch = append(removePacket.AppInfoFetch, appInfo)
@@ -67,11 +67,11 @@ func (task *RemoveCmdTask) RemoveAuto() error {
 		}
 
 		if len(removeResponse.GetWorkerResponse()) < 1 {
-			fmt.Printf("fetch response for worker %s is empty. check worker-id is correct\n", workerId)
+			logger.Error("fetch response for worker %s is empty. check worker-id is correct\n", workerId)
 		} else if removeResponse.GetWorkerResponse()[0].GetTaskResult().GetResultSuccessful() {
-			log.Println("cleaned all unused packages on worker " + workerId)
+			logger.Tip("Cleaned all unused packages on worker " + workerId)
 		} else {
-			return fmt.Errorf("error on worker " + workerId + " => " + removeResponse.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
+			return fmt.Errorf("worker " + workerId + " => " + removeResponse.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
 		}
 	}
 	return nil
@@ -79,7 +79,7 @@ func (task *RemoveCmdTask) RemoveAuto() error {
 
 func (task *RemoveCmdTask) RemoveSpecified() error {
 	if task.CmdArgs.AppName == "" {
-		return fmt.Errorf("--app-name must be specified")
+		return fmt.Errorf("--app-name field must be specified")
 	}
 
 	appInfo := &proto.AppInfoFetch{
@@ -106,12 +106,12 @@ func (task *RemoveCmdTask) RemoveSpecified() error {
 
 		if response.GetStatus() == consts.StatusOK {
 			if versionSpecified {
-				log.Printf("removed package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
+				logger.Tip("Removed package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
 			} else {
-				log.Printf("removed all package %s at worker %s", task.CmdArgs.AppName, workerId)
+				logger.Tip("Removed all package %s at worker %s", task.CmdArgs.AppName, workerId)
 			}
 		} else {
-			log.Printf("failed to remove %s at worker %s", task.CmdArgs.AppName, workerId)
+			logger.Error("Failed to remove %s at worker %s", task.CmdArgs.AppName, workerId)
 		}
 	}
 	return nil

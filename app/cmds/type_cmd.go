@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"os"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 
 	"google.golang.org/protobuf/encoding/protojson"
@@ -57,8 +58,8 @@ func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
 
 	response, err := a.PostRequest(workerListPacket)
 	if err != nil {
-		log.Fatal(err)
-		return nil
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 
 	var workerRealIds []string
@@ -69,7 +70,8 @@ func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
 			} else if workerInfo.GetWorkerInfo().GetWorkerName() == workerRaw {
 				workerRealIds = append(workerRealIds, workerInfo.GetWorkerInfo().GetWorkerId())
 			} else {
-				log.Fatal(fmt.Errorf("cannot determine given element (%s) is id or name. check given id worker is connected to server", workerRaw))
+				logger.Warn("cannot determine given element (%s) is id or name. check given id worker is connected to server", workerRaw)
+				os.Exit(1)
 			}
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"staploy-cli/app/cmds"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
 
@@ -45,15 +46,15 @@ func (a *ListCmdTask) MainCmd() error {
 func WorkerInfoFormatter(workerInfo *proto.WorkerInfo, detail bool, index int) []string {
 	var workerData []string
 	if detail {
-		workerData = append(workerData, fmt.Sprintf("Worker #%d %s\n", index, workerInfo.GetWorkerId()))
-		workerData = append(workerData, fmt.Sprintf("	Name: %s\n", workerInfo.GetWorkerName()))
-		workerData = append(workerData, fmt.Sprintf("	Cpu: %s (%d Core(s))\n", workerInfo.GetCpuArch().String(), workerInfo.GetCpuCoreCount()))
-		workerData = append(workerData, fmt.Sprintf("	Memory: %d bytes\n", workerInfo.GetMemoryInBytes()))
-		workerData = append(workerData, fmt.Sprintf("	Working directory: %s\n", workerInfo.GetBinLocation()))
-		workerData = append(workerData, fmt.Sprintf("	Additional flags\n"))
-		workerData = append(workerData, fmt.Sprintf("		Default buffer size: %d bytes\n", workerInfo.WorkerFlags.BUFFER_SIZE))
-		workerData = append(workerData, fmt.Sprintf("		Remote shell enabled: %v\n", workerInfo.WorkerFlags.USE_REMOTE_SHELL))
-		workerData = append(workerData, fmt.Sprintf("		Skip executable integrity check: %v\n", workerInfo.WorkerFlags.SKIP_HASH_VERIFICATION))
+		workerData = append(workerData, fmt.Sprintf("* Worker #%d %s\n", index, workerInfo.GetWorkerId()))
+		workerData = append(workerData, fmt.Sprintf(" ├─ Name: %s\n", workerInfo.GetWorkerName()))
+		workerData = append(workerData, fmt.Sprintf(" ├─ Cpu: %s (%d Core(s))\n", workerInfo.GetCpuArch().String(), workerInfo.GetCpuCoreCount()))
+		workerData = append(workerData, fmt.Sprintf(" ├─ Memory: %s (%s bytes)\n", logger.FormatBytes(workerInfo.GetMemoryInBytes()), logger.FormatWithCommas(workerInfo.GetMemoryInBytes())))
+		workerData = append(workerData, fmt.Sprintf(" ├─ Working directory: %s\n", workerInfo.GetBinLocation()))
+		workerData = append(workerData, fmt.Sprintf(" └─ Additional flags\n"))
+		workerData = append(workerData, fmt.Sprintf("     ├─ Default buffer size: %s bytes\n", logger.FormatWithCommas(workerInfo.WorkerFlags.BUFFER_SIZE)))
+		workerData = append(workerData, fmt.Sprintf("     ├─ Remote shell enabled: %v\n", workerInfo.WorkerFlags.USE_REMOTE_SHELL))
+		workerData = append(workerData, fmt.Sprintf("     └─ Skip executable integrity check: %v\n", workerInfo.WorkerFlags.SKIP_HASH_VERIFICATION))
 	} else {
 		workerData = append(workerData, fmt.Sprintf("Worker #%d %s (%s)\n", index, workerInfo.GetWorkerId(), workerInfo.GetWorkerName()))
 	}

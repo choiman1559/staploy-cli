@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 	"strings"
 
@@ -24,7 +24,7 @@ type UploadCmdTask struct {
 }
 
 func (task *UploadCmdTask) MainCmd() error {
-	log.Print("Uploading file " + task.CmdArgs.PackageFile)
+	logger.Process("Uploading file " + task.CmdArgs.PackageFile)
 	blobToken, err := task.UploadFile(task.CmdArgs.PackageFile)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (task *UploadCmdTask) MainCmd() error {
 	}
 
 	packageMetadata := response.GetWorkerResponse()[0].GetWorkerInfo().GetInstalledApp()[0]
-	log.Printf("Package identified as \"%s\" (%s)", packageMetadata.GetApp().AppName, packageMetadata.GetCurrentVersion().GetVersionName())
+	logger.Info("Package identified: \"%s\" version %s", packageMetadata.GetApp().AppName, packageMetadata.GetCurrentVersion().GetVersionName())
 
 	requestPacket.TaskType = &proto.RequestPacket_AppsTaskType{AppsTaskType: proto.TaskAppsTypes_TYPE_APP_PKG_CREATE}
 	response, err = task.PostRequest(requestPacket)
@@ -66,10 +66,11 @@ func (task *UploadCmdTask) MainCmd() error {
 	for _, workers := range response.GetWorkerResponse() {
 		packageArch += workers.GetWorkerInfo().GetCpuArch().String() + ", "
 	}
+
 	packageArch = strings.TrimSuffix(packageArch, ", ")
-	log.Printf("Package supported arch: %s", packageArch)
-	log.Printf("Successfully registered at server.")
-	log.Printf("Checkout list of available packages by using \"staploy-cli apps -n %s\"", packageMetadata.GetApp().GetAppName())
+	logger.Info("Supported architectures: %s", packageArch)
+	logger.Info("Successfully registered at server!")
+	logger.Tip("Tip: Check available packages using \"staploy-cli apps -n %s\"", packageMetadata.GetApp().GetAppName())
 
 	return nil
 }

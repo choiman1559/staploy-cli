@@ -2,9 +2,9 @@ package apps
 
 import (
 	"errors"
-	"log"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
 
@@ -15,7 +15,7 @@ type DeleteCmdTask struct {
 
 func (t *DeleteCmdTask) MainCmd() error {
 	if t.CmdArgs.AppName == "" {
-		return errors.New("AppName is required")
+		return errors.New("--app-name field is required")
 	}
 
 	requestPacket := t.CreateDefPacket()
@@ -39,7 +39,13 @@ func (t *DeleteCmdTask) MainCmd() error {
 	}
 
 	if response.GetStatus() == consts.StatusOK {
-		log.Println("Delete Command Success")
+		if len(t.CmdArgs.VersionName) == 0 {
+			logger.Info("Deleting app entry \"%s\" finished successfully", t.CmdArgs.AppName)
+		} else {
+			logger.Info("Deleting app entry \"%s\" (version %v) finished successfully", t.CmdArgs.AppName, t.CmdArgs.VersionName)
+		}
+	} else {
+		logger.Error("Deleting app entry \"%s\" finished with error: %s", response.GetErrorCause())
 	}
 	return nil
 }

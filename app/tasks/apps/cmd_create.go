@@ -17,7 +17,7 @@ func (t *CreateCmdTask) MainCmd() error {
 	requestPacket.TaskType = &proto.RequestPacket_AppsTaskType{AppsTaskType: proto.TaskAppsTypes_TYPE_APP_REGISTER}
 
 	if t.CmdArgs.AppName == "" {
-		return errors.New("AppName is required")
+		return errors.New("--app-name field is required")
 	}
 
 	requestPacket.AppInfoFetch = append(requestPacket.GetAppInfoFetch(), &proto.AppInfoFetch{

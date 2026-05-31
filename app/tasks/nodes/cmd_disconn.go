@@ -4,6 +4,7 @@ import (
 	"log"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
 
@@ -24,7 +25,7 @@ func (a *DisConnCmdTask) MainCmd() error {
 		}
 
 		if response != nil && response.GetStatus() == consts.StatusOK {
-			log.Print("Disconnected worker " + ids)
+			logger.Process("Disconnecting worker: " + ids)
 		}
 	}
 	return nil

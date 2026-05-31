@@ -1,13 +1,13 @@
 package app
 
 import (
-	"log"
-	"staploy-cli/app/apps"
-	"staploy-cli/app/build"
 	"staploy-cli/app/cmds"
-	"staploy-cli/app/deploy"
-	"staploy-cli/app/nodes"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
+	"staploy-cli/app/tasks/apps"
+	"staploy-cli/app/tasks/build"
+	"staploy-cli/app/tasks/deploy"
+	"staploy-cli/app/tasks/nodes"
 
 	"github.com/alexflint/go-arg"
 )
@@ -15,6 +15,7 @@ import (
 //goland:noinspection DuplicatedCode
 func HandleProcessInvoke() {
 	arg.MustParse(&cmds.Args)
+	logger.InitLogger(cmds.Args.NoColor)
 
 	defaultArgs := cmds.DefaultArgs{
 		Address:       cmds.Args.Address,
@@ -106,11 +107,11 @@ func HandleProcessInvoke() {
 	}
 
 	if taskInterface == nil {
-		log.Fatal("no command arg specified")
+		logger.Error("no command arg specified. abort")
 	}
 
 	err := taskInterface.MainCmd()
 	if err != nil {
-		log.Fatal(err)
+		logger.Error("%v", err)
 	}
 }

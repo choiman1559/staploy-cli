@@ -8,6 +8,14 @@ const (
 	StatusOK       = "ok"
 )
 
+const (
+	InfoPrefix    = "[+] "
+	SkipPrefix    = "[-] "
+	ErrorPrefix   = "[!] "
+	ProcessPrefix = "[*] "
+	WarningPrefix = "[?] "
+)
+
 const PACKAGE_DIR_SHARE = "share"
 const PACKAGE_FILE_METADATA = ".metadata"
 const PACKAGE_FORMAT_VERSION = 1

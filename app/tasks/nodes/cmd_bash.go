@@ -1,8 +1,10 @@
 package nodes
 
 import (
+	"fmt"
 	"log"
 	"staploy-cli/app/cmds"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
 
@@ -31,9 +33,9 @@ func (a *BashCmdTask) MainCmd() error {
 	}
 
 	if len(response.WorkerResponse) > 0 {
-		log.Print("Shell executed, Output:\n", response.WorkerResponse[0].GetPacketInfo().GetExtraData())
+		logger.Info("Shell executed, Output:\n", response.WorkerResponse[0].GetPacketInfo().GetExtraData())
 	} else {
-		log.Fatalf("Error: Specified worker is not valid or not connected to server")
+		return fmt.Errorf("specified worker is not valid or not connected to server")
 	}
 	return nil
 }

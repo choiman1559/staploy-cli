@@ -1,9 +1,9 @@
 package deploy
 
 import (
-	"log"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
 
@@ -38,15 +38,15 @@ func (task *SetCmdTask) MainCmd() error {
 		if response.GetStatus() == consts.StatusOK {
 			if response.GetWorkerResponse()[0].GetTaskResult().GetResultSuccessful() {
 				if versionSpecified {
-					log.Printf("setting triggered package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
+					logger.Info("Setting triggered package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
 				} else {
-					log.Printf("untriggered package %s at worker %s", task.CmdArgs.AppName, workerId)
+					logger.Tip("Untriggered package %s at worker %s", task.CmdArgs.AppName, workerId)
 				}
 			} else {
-				log.Printf("error: %v", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
+				logger.Error("error: %v", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
 			}
 		} else {
-			log.Printf("failed to setting trigger for %s at worker %s", task.CmdArgs.AppName, workerId)
+			logger.Error("failed to setting trigger for %s at worker %s", task.CmdArgs.AppName, workerId)
 		}
 	}
 	return nil

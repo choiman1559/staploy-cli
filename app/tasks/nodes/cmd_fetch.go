@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"staploy-cli/app/cmds"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 	"strings"
 	"text/tabwriter"
@@ -53,16 +54,16 @@ func AppInfoFormatter(workerInfo *proto.WorkerInfo, detail bool) []string {
 	for _, data := range workerInfo.InstalledApp {
 		var sb strings.Builder
 		appName := data.GetApp().GetAppName()
-		appDesc := safeBlankStr(data.GetApp().GetAppDescription())
+		appDesc := logger.SafeBlankStr(data.GetApp().GetAppDescription())
 
-		sb.WriteString(fmt.Sprintf("App: %s\n", appName))
-		sb.WriteString(fmt.Sprintf(" └─ Description: %s\n", appDesc))
+		sb.WriteString(fmt.Sprintf("* App: %s\n", appName))
+		sb.WriteString(fmt.Sprintf(" ├─ Description: %s\n", appDesc))
 
 		currentVer := "(none)"
 		if data.CurrentVersion != nil && data.CurrentVersion.VersionName != "" {
 			currentVer = data.GetCurrentVersion().GetVersionName()
 		}
-		sb.WriteString(fmt.Sprintf(" └─ Current Version: %s\n\n", currentVer))
+		sb.WriteString(fmt.Sprintf(" └─ Current Version: %s\n\n", logger.VersionNamePrefix(currentVer)))
 
 		var tableBuf bytes.Buffer
 		w := tabwriter.NewWriter(&tableBuf, 0, 0, 3, ' ', 0)
@@ -96,23 +97,23 @@ func AppInfoFormatter(workerInfo *proto.WorkerInfo, detail bool) []string {
 			}
 
 			if detail {
-				libVer := safeBlankStr(version.GetLibVersion())
+				libVer := logger.SafeBlankStr(version.GetLibVersion())
 				execs := version.GetEntryBinaries()
 
 				if len(execs) == 0 {
-					_, err := fmt.Fprintf(w, "   %s\t%s\t%s\t%s\n", verName, status, libVer, "(none)")
+					_, err := fmt.Fprintf(w, "   %s\t%s\t%s\t%s\n", logger.VersionNamePrefix(verName), status, libVer, "(none)")
 					if err != nil {
 						return nil
 					}
 				} else {
-					firstBin := fmt.Sprintf("%s (%s)", execs[0].GetName(), shortHash(execs[0].GetHash()))
-					_, err := fmt.Fprintf(w, "   %s\t%s\t%s\t%s\n", verName, status, libVer, firstBin)
+					firstBin := fmt.Sprintf("%s (%s)", execs[0].GetName(), logger.ShortHash(execs[0].GetHash()))
+					_, err := fmt.Fprintf(w, "   %s\t%s\t%s\t%s\n", logger.VersionNamePrefix(verName), status, libVer, firstBin)
 					if err != nil {
 						return nil
 					}
 
 					for i := 1; i < len(execs); i++ {
-						nextBin := fmt.Sprintf("%s (%s)", execs[i].GetName(), shortHash(execs[i].GetHash()))
+						nextBin := fmt.Sprintf("%s (%s)", execs[i].GetName(), logger.ShortHash(execs[i].GetHash()))
 						_, err := fmt.Fprintf(w, "   \t\t\t%s\n", nextBin)
 						if err != nil {
 							return nil
@@ -120,7 +121,7 @@ func AppInfoFormatter(workerInfo *proto.WorkerInfo, detail bool) []string {
 					}
 				}
 			} else {
-				_, err := fmt.Fprintf(w, "   %s\t%s\n", verName, status)
+				_, err := fmt.Fprintf(w, "   %s\t%s\n", logger.VersionNamePrefix(verName), status)
 				if err != nil {
 					return nil
 				}
@@ -137,18 +138,4 @@ func AppInfoFormatter(workerInfo *proto.WorkerInfo, detail bool) []string {
 		workerData = append(workerData, sb.String())
 	}
 	return workerData
-}
-
-func shortHash(hash string) string {
-	if len(hash) > 10 {
-		return hash[:10] + "..."
-	}
-	return hash
-}
-
-func safeBlankStr(str string) string {
-	if str == "" {
-		return "(none)"
-	}
-	return str
 }

@@ -6,11 +6,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 	"strings"
 	"time"
@@ -33,6 +33,7 @@ func (a *PkgCmdTask) MainCmd() error {
 	a.TargetHashVersion = make(map[proto.CpuArch]*proto.Version)
 	a.ShareExecHash = make(map[string]bool)
 
+	logger.Process("Checking all directories...")
 	err := a.preCheckDirExists()
 	if err != nil {
 		return err
@@ -48,10 +49,15 @@ func (a *PkgCmdTask) MainCmd() error {
 		},
 	}
 
+	logger.Info("Package build info: \"%s\" (%s)", a.CmdArgs.AppName, logger.VersionNamePrefix(a.CmdArgs.VersionName))
 	err = a.startPacking()
 	if err != nil {
 		return err
 	}
+
+	logger.Info("Package build finished successfully")
+	logger.Info("Output file created at \"%s\"", a.getArchivePath())
+	logger.Tip("Tip: Upload package file to server using \"staploy-cli upload -f %s\"", a.getArchivePath())
 	return nil
 }
 
@@ -61,9 +67,10 @@ func (a *PkgCmdTask) getArchivePath() string {
 }
 
 func (a *PkgCmdTask) startPacking() error {
+	logger.Process("Start building package...")
 	tarFile, err := os.Create(a.getArchivePath())
 	if err != nil {
-		log.Fatalf("failed to create tar archive: %v", err)
+		return fmt.Errorf("failed to create tar archive: %v", err)
 	}
 
 	defer func(tarFile *os.File) {
@@ -152,6 +159,10 @@ func (a *PkgCmdTask) calculateVerHash(arch proto.CpuArch) error {
 				Hash: fileHash,
 			})
 
+			if a.DefaultArgs.Verbose {
+				logger.Info("Arch %s => added \"%s\" (hash %s)", archToString(arch), execFileName, fileHash)
+			}
+
 			if arch == proto.CpuArch_UNKNOWN {
 				a.ShareExecHash[execFileName] = true
 			}
@@ -188,15 +199,14 @@ func getSha1Hash(filePath string) (string, error) {
 }
 
 func (a *PkgCmdTask) addArchDir(arch proto.CpuArch, tw *tar.Writer) error {
+	if a.DefaultArgs.Verbose {
+		logger.Process("Packed target architecture: %s", archToString(arch))
+	}
+
 	srcPath := a.TargetPathByArch[arch]
 	version := a.TargetHashVersion[arch]
 
-	tarDirPath := arch.String()
-	if //goland:noinspection GoDfaConstantCondition
-	arch == proto.CpuArch_UNKNOWN {
-		tarDirPath = consts.PACKAGE_DIR_SHARE
-	}
-
+	tarDirPath := archToString(arch)
 	err := filepath.WalkDir(srcPath, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -330,4 +340,11 @@ func checkDirExists(path string) (bool, error) {
 		return false, fmt.Errorf("%s is not a directory", path)
 	}
 	return true, nil
+}
+
+func archToString(arch proto.CpuArch) string {
+	if arch == proto.CpuArch_UNKNOWN {
+		return consts.PACKAGE_DIR_SHARE
+	}
+	return arch.String()
 }

@@ -1,9 +1,9 @@
 package deploy
 
 import (
-	"log"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
 
@@ -30,10 +30,11 @@ func (task *PushCmdTask) MainCmd() error {
 			return err
 		}
 
-		if response.GetStatus() == consts.StatusOK {
-			log.Printf("pushed package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
+		if response.GetStatus() == consts.StatusOK && response.GetWorkerResponse()[0].GetTaskResult().GetResultSuccessful() {
+			logger.Info("Pushed package: \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(task.CmdArgs.Version), workerId)
 		} else {
-			log.Printf("failed to push %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
+			logger.Error("Failed to push \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(task.CmdArgs.Version), workerId)
+			logger.Error("Error cause is: %s", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
 		}
 	}
 	return nil

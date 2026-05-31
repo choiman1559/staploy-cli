@@ -99,6 +99,7 @@ var Args struct {
 	Address string `arg:"-a,env:STAPLOY_HOST_ADDR" help:"overrides server address. can be preset with STAPLOY_HOST_ADDR environment variable"`
 	Port    int    `arg:"-p,env:STAPLOY_HOST_PORT" help:"overrides server port. can be preset with STAPLOY_HOST_PORT environment variable"`
 	UseName bool   `arg:"--use-name,env:STAPLOY_USE_WORKER_NAME" help:"allows using name instead of worker uuid"`
+	NoColor bool   `arg:"--no-color" help:"disables color output"`
 	Verbose bool   `arg:"-v,--verbose" help:"verbose output"`
 
 	Create *CreateCmd `arg:"subcommand:create" help:"create newly or update information of application"`
