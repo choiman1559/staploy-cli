@@ -16,7 +16,7 @@ import (
 type CmdTypes interface {
 	AppsCmd | BashCmd | BuildCmd | CreateCmd |
 		DeleteCmd | DisconnCmd | FetchCmd | ListCmd |
-		PushCmd | RemoveCmd | SetCmd | UploadCmd
+		PushCmd | RemoveCmd | SetCmd | UploadCmd | StaFileCmd
 }
 
 type TaskTypes interface {

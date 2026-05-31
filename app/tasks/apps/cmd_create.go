@@ -2,8 +2,8 @@ package apps
 
 import (
 	"errors"
-	"log"
 	"staploy-cli/app/cmds"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
 
@@ -32,6 +32,6 @@ func (t *CreateCmdTask) MainCmd() error {
 		return err
 	}
 
-	log.Println(response.GetExtraData())
+	logger.Info(response.GetExtraData())
 	return nil
 }

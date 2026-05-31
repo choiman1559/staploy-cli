@@ -1,0 +1,55 @@
+package build
+
+import (
+	"staploy-cli/app/cmds"
+	"staploy-cli/app/logger"
+	"staploy-cli/app/proto"
+	"staploy-cli/app/tasks/apps"
+)
+
+func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage) error {
+	for _, manage := range manages {
+		logger.Info("Processing manage app_name \"%s\"", manage.AppName)
+		logger.EnableTree()
+
+		if manage.Create != nil {
+			t := &apps.CreateCmdTask{}
+			t.Init(*defArgs, cmds.CreateCmd{
+				AppName:        manage.AppName,
+				AppDescription: manage.Create.AppDescription,
+			}, proto.TaskGroup_TASK_MANAGE_APPS)
+
+			err := t.MainCmd()
+			if err != nil {
+				logger.Error("Error processing manage name \"%s\": %v", manage.AppName, err)
+			}
+		}
+
+		if manage.Upload != nil {
+			t := &apps.UploadCmdTask{}
+			t.Init(*defArgs, cmds.UploadCmd{PackageFile: manage.Upload.PackageFile}, proto.TaskGroup_TASK_MANAGE_APPS)
+
+			err := t.MainCmd()
+			if err != nil {
+				logger.Error("Error uploading app \"%s\": %v", manage.AppName, err)
+			}
+		}
+
+		if manage.Delete != nil {
+			t := &apps.DeleteCmdTask{}
+			t.Init(*defArgs, cmds.DeleteCmd{
+				AppName:     manage.AppName,
+				VersionName: manage.Delete.Versions,
+			}, proto.TaskGroup_TASK_MANAGE_APPS)
+
+			err := t.MainCmd()
+			if err != nil {
+				logger.Error("Error deleting app \"%s\": %v", manage.AppName, err)
+			}
+		}
+
+		logger.DisableTree(true)
+		logger.Tip("Finished manage app_name \"%s\"", manage.AppName)
+	}
+	return nil
+}

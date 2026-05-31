@@ -56,8 +56,8 @@ func (task *UploadCmdTask) MainCmd() error {
 	}
 
 	if len(response.WorkerResponse) < 1 {
-		if response.ErrorCause != "" {
-			return errors.New(response.ErrorCause)
+		if response.GetExtraData() != "" {
+			return errors.New(response.GetExtraData())
 		}
 		return fmt.Errorf("error occurred while creating worker target package on server-side")
 	}

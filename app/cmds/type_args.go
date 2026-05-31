@@ -77,6 +77,10 @@ type SetCmd struct {
 	Version  string   `arg:"-e,--version" help:"version of app to set, disable package if not specified"`
 }
 
+/// ### TaskBuilds
+// build	(package building)
+// file 	(eval *.Staployfile)
+
 type BuildCmd struct {
 	I386     string `arg:"--i386" help:"specifies directory of i386 executable"`
 	X86_64   string `arg:"--x86_64" help:"specifies directory of x86_64 executable"`
@@ -93,6 +97,11 @@ type BuildCmd struct {
 	VersionName string   `arg:"-n,--version-name,required" help:"specifies package version name"`
 	LibVersion  string   `arg:"--lib-version" help:"specifies package lib version"`
 	OutputDir   string   `arg:"-o,--output-dir" help:"specifies directory of output"`
+}
+
+type StaFileCmd struct {
+	ConfigFile string `arg:"-f,--file,required" help:"Staployfile to configure"`
+	ParseOnly  bool   `arg:"--parse-only" help:"Only parse and analyze staployfile for debugging"`
 }
 
 var Args struct {
@@ -115,5 +124,7 @@ var Args struct {
 	Push   *PushCmd   `arg:"subcommand:push" help:"push an package to a remote worker"`
 	Remove *RemoveCmd `arg:"subcommand:remove" help:"remove a package from a remote worker"`
 	Set    *SetCmd    `arg:"subcommand:set" help:"set a version of package to executable path from a remote worker"`
-	Build  *BuildCmd  `arg:"subcommand:build" help:"build a distributable package"`
+
+	Build *BuildCmd   `arg:"subcommand:build" help:"build a distributable package"`
+	File  *StaFileCmd `arg:"subcommand:file" help:"run HCL-like staployfile for deploy & management workers as code"`
 }

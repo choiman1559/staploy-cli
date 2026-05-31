@@ -36,6 +36,11 @@ func HandleProcessInvoke() {
 			t.Init(defaultArgs, *cmds.Args.Build, proto.TaskGroup_TASK_NONE)
 			return t
 		}},
+		{cmds.Args.File != nil, func() cmds.CmdTaskInterface {
+			t := &build.StaFileTask{}
+			t.Init(defaultArgs, *cmds.Args.File, proto.TaskGroup_TASK_NONE)
+			return t
+		}},
 
 		/// TaskAppsTypes
 		{cmds.Args.Create != nil, func() cmds.CmdTaskInterface {
