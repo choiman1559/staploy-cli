@@ -51,6 +51,11 @@ func (a *StaFileTask) MainCmd() error {
 	if a.DefaultArgs.Verbose {
 		logger.Tip("[DEBUG] Configuration is %+v", staFile)
 	}
+
+	a.DefaultArgs.UseWorkerName = staFile.Config.UseName
+	a.DefaultArgs.Port = staFile.Config.Port
+	a.DefaultArgs.Address = staFile.Config.Address
+
 	return a.ParseStaFile(&staFile)
 }
 
@@ -61,11 +66,15 @@ func (a *StaFileTask) FormatWorker(workerIdOrName string) string {
 
 func (a *StaFileTask) CheckWorkerValid(workerIdOrName string) (string, error) {
 	for id, name := range a.WorkerInfo {
-		if workerIdOrName == id || workerIdOrName == name {
+		if workerIdOrName == id || (a.DefaultArgs.UseWorkerName && workerIdOrName == name) {
 			return id, nil
 		}
 	}
-	return "", fmt.Errorf("worker id or name %s not found. Check worker is connected to server", workerIdOrName)
+
+	if a.DefaultArgs.UseWorkerName {
+		return "", fmt.Errorf("worker id or name %s not found. Check worker is connected to server", workerIdOrName)
+	}
+	return "", fmt.Errorf("worker id %s not found. Check worker is connected to server", workerIdOrName)
 }
 
 func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {

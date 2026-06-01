@@ -150,6 +150,7 @@ type BashCommandTask struct {
 	deployTask func()
 }
 
+// EvalTask TODO: continue without error worker
 func (a *StaFileTask) EvalTask(defArgs *cmds.DefaultArgs, task *BashCommandTask) {
 	if task.preDeploy != "" {
 		for _, target := range task.workerId {
@@ -158,7 +159,7 @@ func (a *StaFileTask) EvalTask(defArgs *cmds.DefaultArgs, task *BashCommandTask)
 				logger.Error("Worker %s Executing pre-deploy: \"%s\" -> Failed for: %v", a.FormatWorker(target), task.preDeploy, err)
 				return
 			}
-			logger.Error("Worker %s Executing pre-deploy: \"%s\" -> Success.", a.FormatWorker(target), task.preDeploy)
+			logger.Info("Worker %s Executing pre-deploy: \"%s\" -> Success.", a.FormatWorker(target), task.preDeploy)
 		}
 	}
 	task.deployTask()
