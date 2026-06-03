@@ -14,9 +14,9 @@ import (
 )
 
 type CmdTypes interface {
-	AppsCmd | BashCmd | BuildCmd | CreateCmd |
-		DeleteCmd | DisconnCmd | FetchCmd | ListCmd |
-		PushCmd | RemoveCmd | SetCmd | UploadCmd | StaFileCmd
+	AppsCmd | BashCmd | BuildCmd | CreateCmd | DeleteCmd | DisconnCmd |
+		FetchCmd | ListCmd | PushCmd | RemoveCmd | SetCmd | UploadCmd | StaFileCmd |
+		GroupCmd | GroupAddCmd | GroupCreateCmd | GroupDeleteCmd | GroupListCmd | GroupRemoveCmd
 }
 
 type TaskTypes interface {
@@ -29,32 +29,51 @@ type CmdTaskInterface interface {
 
 type DefaultArgs struct {
 	CmdTaskInterface
-	Address       string
-	Port          int
-	Verbose       bool
-	UseWorkerName bool
+	Address         string
+	Port            int
+	Verbose         bool
+	UseWorkerIdOnly bool
 }
 
 type CmdTask[T CmdTypes] struct {
-	DefaultArgs DefaultArgs
-	CmdArgs     T
-	TaskGroups  proto.TaskGroup
+	DefaultArgs    DefaultArgs
+	CmdArgs        T
+	TaskGroups     proto.TaskGroup
+	WorkersIdCache map[string]string
 }
 
 func (a *CmdTask[T]) Init(defArgs DefaultArgs, cmdArgs T, group proto.TaskGroup) {
 	a.DefaultArgs = defArgs
 	a.CmdArgs = cmdArgs
 	a.TaskGroups = group
+	a.WorkersIdCache = make(map[string]string)
 }
 
 func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
-	if !a.DefaultArgs.UseWorkerName {
+	if a.DefaultArgs.UseWorkerIdOnly {
 		return a.CreateDefPacketIdOnly(workers...)
 	}
 
+	workerRealIds := make(map[string]string)
+	var toQueryWorkers []string
+
+findCache:
+	for _, worker := range workers {
+		for id, name := range a.WorkersIdCache {
+			if id == worker || name == worker {
+				workerRealIds[id] = name
+				continue findCache
+			}
+		}
+		toQueryWorkers = append(toQueryWorkers, worker)
+	}
+
 	workerListPacket := a.CreateDefPacketIdOnly()
-	workerListPacket.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE
-	workerListPacket.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_CONNECTED}
+	workerListPacket.TaskGroup = proto.TaskGroup_TASK_GROUP
+	workerListPacket.TaskType = &proto.RequestPacket_GroupTaskType{GroupTaskType: &proto.GroupRequestPacket{
+		GroupTaskTypes: proto.TaskGroupTypes_TYPE_QUERY_WORKER_IDS,
+		Names:          toQueryWorkers,
+	}}
 
 	response, err := a.PostRequest(workerListPacket)
 	if err != nil {
@@ -62,25 +81,39 @@ func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
 		os.Exit(1)
 	}
 
-	workerRealIds := make(map[string]string)
-	for _, workerInfo := range response.WorkerResponse {
-	perWorkerCheck:
-		for _, workerIdOrName := range workers {
-			if workerInfo.GetWorkerInfo().GetWorkerId() == workerIdOrName {
-				workerRealIds[workerIdOrName] = workerInfo.GetWorkerInfo().GetWorkerName()
-			} else if workerInfo.GetWorkerInfo().GetWorkerName() == workerIdOrName {
-				for workerExistsId, workerExistsName := range workerRealIds {
-					if workerInfo.GetWorkerInfo().GetWorkerName() == workerExistsName {
-						logger.Warn("Possible duplication of name \"%s\" between %s and %s, Ignoring first one", workerIdOrName, workerInfo.GetWorkerInfo().GetWorkerId(), workerExistsId)
-						continue perWorkerCheck
+	groupValidMap := make(map[string]bool)
+	for _, worker := range response.GroupResponse {
+		if worker.GetGroupName() != "" {
+			if worker.GetWorkerInfo() != nil {
+				if !groupValidMap[worker.GetGroupName()] {
+					groupValidMap[worker.GetGroupName()] = true
+					if a.DefaultArgs.Verbose {
+						logger.Tip("[DEBUG] Identified group: %s", worker.GetGroupName())
 					}
 				}
-				workerRealIds[workerInfo.GetWorkerInfo().GetWorkerId()] = workerIdOrName
+
+				workerRealIds[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
+				a.WorkersIdCache[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
 			} else {
-				logger.Error("Cannot determine given element (%s) is id or name. check given id worker is connected to server", workerIdOrName)
-				os.Exit(1)
+				logger.Warn("Requested group name \"%s\" not exists. Skipping...", worker.GetRequestedName())
 			}
+			continue
 		}
+
+		if worker.GetWorkerInfo() != nil {
+			workerRealIds[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
+			a.WorkersIdCache[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
+
+			if a.DefaultArgs.Verbose {
+				if worker.RequestedName == worker.GetWorkerInfo().GetWorkerId() {
+					logger.Tip("[DEBUG] Identified worker as Id: %s", logger.ShortHash(worker.GetWorkerInfo().GetWorkerId()))
+				} else {
+					logger.Tip("[DEBUG] Identified worker as Name: %s", logger.ShortHash(worker.GetWorkerInfo().GetWorkerId()))
+				}
+			}
+			continue
+		}
+		logger.Warn("Requested identify \"%s\" is nor id, name, group; Skipping...", worker.GetRequestedName())
 	}
 
 	keys := make([]string, 0, len(workerRealIds))

@@ -14,6 +14,7 @@ type DisConnCmdTask struct {
 }
 
 func (a *DisConnCmdTask) MainCmd() error {
+	//TODO: Opt-in group into lists
 	for _, ids := range a.CmdArgs.WorkerId {
 		packet := a.CreateDefPacket(ids)
 		packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_DISCONN_WORKER}

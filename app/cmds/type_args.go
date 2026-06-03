@@ -77,6 +77,44 @@ type SetCmd struct {
 	Version  string   `arg:"-e,--version" help:"version of app to set, disable package if not specified"`
 }
 
+/// ### TaskGroupTypes
+// group
+// -> create 	(TYPE_GROUP_CREATE)
+// -> delete	(TYPE_GROUP_DELETE)
+// -> add		(TYPE_GROUP_ADD_WORKER)
+// -> remove	(TYPE_GROUP_REMOVE_WORKER)
+// -> list		(TYPE_QUERY_GROUP_LIST)
+
+type GroupCmd struct {
+	GroupCreate *GroupCreateCmd `arg:"subcommand:create" help:"create group"`
+	GroupDelete *GroupDeleteCmd `arg:"subcommand:delete" help:"delete group"`
+	GroupList   *GroupListCmd   `arg:"subcommand:list" help:"list groups"`
+	GroupAdd    *GroupAddCmd    `arg:"subcommand:add" help:"add workers to group"`
+	GroupRemove *GroupRemoveCmd `arg:"subcommand:remove" help:"remove workers from group"`
+}
+
+type GroupCreateCmd struct {
+	GroupName string `arg:"-g,--group-name,required" help:"name of group to create"`
+}
+
+type GroupDeleteCmd struct {
+	GroupName string `arg:"-g,--group-name,required" help:"name of group to delete"`
+}
+
+type GroupListCmd struct {
+	GroupName string `arg:"-g,--group-name" help:"name of group to list"`
+}
+
+type GroupAddCmd struct {
+	GroupName string   `arg:"-g,--group-name,required" help:"name of group to add workers"`
+	WorkerId  []string `arg:"-w,--worker-id,required" help:"id or name of worker for add to group"`
+}
+
+type GroupRemoveCmd struct {
+	GroupName string   `arg:"-g,--group-name,required" help:"name of group to remove workers"`
+	WorkerId  []string `arg:"-w,--worker-id,required" help:"id or name of worker to remove from group"`
+}
+
 /// ### TaskBuilds
 // build	(package building)
 // file 	(eval *.Staployfile)
@@ -105,11 +143,11 @@ type StaFileCmd struct {
 }
 
 var Args struct {
-	Address string `arg:"-a,env:STAPLOY_HOST_ADDR" help:"overrides server address. can be preset with STAPLOY_HOST_ADDR environment variable"`
-	Port    int    `arg:"-p,env:STAPLOY_HOST_PORT" help:"overrides server port. can be preset with STAPLOY_HOST_PORT environment variable"`
-	UseName bool   `arg:"--use-name,env:STAPLOY_USE_WORKER_NAME" help:"allows using name instead of worker uuid"`
-	NoColor bool   `arg:"--no-color" help:"disables color output"`
-	Verbose bool   `arg:"-v,--verbose" help:"verbose output"`
+	Address   string `arg:"-a,env:STAPLOY_HOST_ADDR" help:"overrides server address. can be preset with STAPLOY_HOST_ADDR environment variable"`
+	Port      int    `arg:"-p,env:STAPLOY_HOST_PORT" help:"overrides server port. can be preset with STAPLOY_HOST_PORT environment variable"`
+	UseIdOnly bool   `arg:"--enforce-uuid,env:STAPLOY_USE_WORKER_ID" help:"enforce to use worker uuid only instead of name and groups"`
+	NoColor   bool   `arg:"--no-color" help:"disables color output"`
+	Verbose   bool   `arg:"-v,--verbose" help:"verbose output"`
 
 	Create *CreateCmd `arg:"subcommand:create" help:"create newly or update information of application"`
 	Delete *DeleteCmd `arg:"subcommand:delete" help:"delete a application"`
@@ -125,6 +163,7 @@ var Args struct {
 	Remove *RemoveCmd `arg:"subcommand:remove" help:"remove a package from a remote worker"`
 	Set    *SetCmd    `arg:"subcommand:set" help:"set a version of package to executable path from a remote worker"`
 
+	Group *GroupCmd   `arg:"subcommand:group" help:"manage groups of workers"`
 	Build *BuildCmd   `arg:"subcommand:build" help:"build a distributable package"`
 	File  *StaFileCmd `arg:"subcommand:file" help:"run HCL-like staployfile for deploy & management workers as code"`
 }

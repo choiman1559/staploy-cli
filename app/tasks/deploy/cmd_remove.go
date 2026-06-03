@@ -21,6 +21,7 @@ func (task *RemoveCmdTask) MainCmd() error {
 }
 
 func (task *RemoveCmdTask) RemoveAuto() error {
+	//TODO: Opt-in group into lists
 	for _, workerId := range task.CmdArgs.WorkerId {
 		packet := task.CreateDefPacket(workerId)
 		packet.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE

@@ -25,6 +25,7 @@ func (task *SetCmdTask) MainCmd() error {
 		appInfo.AppVersion = append(appInfo.GetAppVersion(), &proto.Version{VersionName: task.CmdArgs.Version})
 	}
 
+	//TODO: Opt-in group into lists
 	for _, workerId := range task.CmdArgs.WorkerId {
 		request := task.CreateDefPacket(workerId)
 		request.TaskType = &proto.RequestPacket_DeployTaskType{DeployTaskType: proto.TaskDeployTypes_TYPE_DEPLOY_SET_VERSION}

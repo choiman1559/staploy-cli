@@ -7,6 +7,7 @@ import (
 	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
+	"strings"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -52,7 +53,7 @@ func (a *StaFileTask) MainCmd() error {
 		logger.Tip("[DEBUG] Configuration is %+v", staFile)
 	}
 
-	a.DefaultArgs.UseWorkerName = staFile.Config.UseName
+	a.DefaultArgs.UseWorkerIdOnly = staFile.Config.UseIdOnly
 	a.DefaultArgs.Port = staFile.Config.Port
 	a.DefaultArgs.Address = staFile.Config.Address
 
@@ -65,25 +66,29 @@ func (a *StaFileTask) FormatWorker(workerIdOrName string) string {
 }
 
 func (a *StaFileTask) CheckWorkerValid(workerIdOrName string) (string, error) {
+	if strings.HasPrefix(workerIdOrName, "group:") {
+		return workerIdOrName, nil
+	}
+
 	for id, name := range a.WorkerInfo {
-		if workerIdOrName == id || (a.DefaultArgs.UseWorkerName && workerIdOrName == name) {
+		if workerIdOrName == id || workerIdOrName == name {
 			return id, nil
 		}
 	}
 
-	if a.DefaultArgs.UseWorkerName {
-		return "", fmt.Errorf("worker id or name %s not found. Check worker is connected to server", workerIdOrName)
+	if a.DefaultArgs.UseWorkerIdOnly {
+		return "", fmt.Errorf("worker id %s not found. Check worker is connected to server", workerIdOrName)
 	}
-	return "", fmt.Errorf("worker id %s not found. Check worker is connected to server", workerIdOrName)
+	return "", fmt.Errorf("worker id or name %s not found. Check worker is connected to server", workerIdOrName)
 }
 
 func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 	logger.Process("Parsing Staployfile... Found %d manages and %d targets", len(staployFile.Manages), len(staployFile.Targets))
 	defaultArgs := &cmds.DefaultArgs{
-		Address:       staployFile.Config.Address,
-		Port:          staployFile.Config.Port,
-		UseWorkerName: staployFile.Config.UseName,
-		Verbose:       a.DefaultArgs.Verbose,
+		Address:         staployFile.Config.Address,
+		Port:            staployFile.Config.Port,
+		UseWorkerIdOnly: staployFile.Config.UseIdOnly,
+		Verbose:         a.DefaultArgs.Verbose,
 	}
 
 	if defaultArgs.Address == "" {

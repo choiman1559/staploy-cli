@@ -7,9 +7,9 @@ type StaployFile struct {
 }
 
 type Configs struct {
-	Address string `hcl:"address"`
-	Port    int    `hcl:"port"`
-	UseName bool   `hcl:"use_name,optional"`
+	Address   string `hcl:"address"`
+	Port      int    `hcl:"port"`
+	UseIdOnly bool   `hcl:"enforce_uuid,optional"`
 }
 
 type Target struct {

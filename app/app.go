@@ -7,6 +7,7 @@ import (
 	"staploy-cli/app/tasks/apps"
 	"staploy-cli/app/tasks/build"
 	"staploy-cli/app/tasks/deploy"
+	"staploy-cli/app/tasks/groups"
 	"staploy-cli/app/tasks/nodes"
 
 	"github.com/alexflint/go-arg"
@@ -18,10 +19,10 @@ func HandleProcessInvoke() {
 	logger.InitLogger(cmds.Args.NoColor)
 
 	defaultArgs := cmds.DefaultArgs{
-		Address:       cmds.Args.Address,
-		Port:          cmds.Args.Port,
-		Verbose:       cmds.Args.Verbose,
-		UseWorkerName: cmds.Args.UseName,
+		Address:         cmds.Args.Address,
+		Port:            cmds.Args.Port,
+		Verbose:         cmds.Args.Verbose,
+		UseWorkerIdOnly: cmds.Args.UseIdOnly,
 	}
 
 	var taskInterface cmds.CmdTaskInterface
@@ -39,6 +40,11 @@ func HandleProcessInvoke() {
 		{cmds.Args.File != nil, func() cmds.CmdTaskInterface {
 			t := &build.StaFileTask{}
 			t.Init(defaultArgs, *cmds.Args.File, proto.TaskGroup_TASK_NONE)
+			return t
+		}},
+		{cmds.Args.Group != nil, func() cmds.CmdTaskInterface {
+			t := &groups.GroupCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Group, proto.TaskGroup_TASK_NONE)
 			return t
 		}},
 
