@@ -15,7 +15,7 @@ type GroupListTask struct {
 }
 
 func (task *GroupListTask) MainCmd() error {
-	requestPacket := task.CreateDefPacketIdOnly()
+	requestPacket := task.CreateDefPacket()
 	requestPacket.TaskType = &proto.RequestPacket_GroupTaskType{GroupTaskType: &proto.GroupRequestPacket{
 		GroupTaskTypes: proto.TaskGroupTypes_TYPE_QUERY_GROUP_LIST,
 		GroupName:      &task.CmdArgs.GroupName,

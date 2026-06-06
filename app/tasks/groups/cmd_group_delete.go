@@ -13,7 +13,7 @@ type GroupDeleteTask struct {
 }
 
 func (task *GroupDeleteTask) MainCmd() error {
-	requestPacket := task.CreateDefPacketIdOnly()
+	requestPacket := task.CreateDefPacket()
 	requestPacket.TaskType = &proto.RequestPacket_GroupTaskType{GroupTaskType: &proto.GroupRequestPacket{
 		GroupTaskTypes: proto.TaskGroupTypes_TYPE_GROUP_DELETE,
 		GroupName:      &task.CmdArgs.GroupName,

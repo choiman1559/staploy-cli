@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
+	"strings"
 
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -27,6 +27,9 @@ type CmdTaskInterface interface {
 	MainCmd() error
 }
 
+var WorkersIdCache map[string]string
+var GroupValidMap map[string]bool
+
 type DefaultArgs struct {
 	CmdTaskInterface
 	Address         string
@@ -36,22 +39,25 @@ type DefaultArgs struct {
 }
 
 type CmdTask[T CmdTypes] struct {
-	DefaultArgs    DefaultArgs
-	CmdArgs        T
-	TaskGroups     proto.TaskGroup
-	WorkersIdCache map[string]string
+	DefaultArgs DefaultArgs
+	CmdArgs     T
+	TaskGroups  proto.TaskGroup
+}
+
+func InitCache() {
+	WorkersIdCache = make(map[string]string)
+	GroupValidMap = make(map[string]bool)
 }
 
 func (a *CmdTask[T]) Init(defArgs DefaultArgs, cmdArgs T, group proto.TaskGroup) {
 	a.DefaultArgs = defArgs
 	a.CmdArgs = cmdArgs
 	a.TaskGroups = group
-	a.WorkersIdCache = make(map[string]string)
 }
 
-func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
-	if a.DefaultArgs.UseWorkerIdOnly {
-		return a.CreateDefPacketIdOnly(workers...)
+func (a *CmdTask[T]) ParseWorkers(disableGroup bool, workers ...string) ([]string, error) {
+	if workers == nil || len(workers) == 0 {
+		return []string{}, nil
 	}
 
 	workerRealIds := make(map[string]string)
@@ -59,7 +65,11 @@ func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
 
 findCache:
 	for _, worker := range workers {
-		for id, name := range a.WorkersIdCache {
+		if disableGroup && strings.HasPrefix(worker, "group:") {
+			return nil, fmt.Errorf("group is not supported on this type of task: %s", worker)
+		}
+
+		for id, name := range WorkersIdCache {
 			if id == worker || name == worker {
 				workerRealIds[id] = name
 				continue findCache
@@ -68,62 +78,75 @@ findCache:
 		toQueryWorkers = append(toQueryWorkers, worker)
 	}
 
-	workerListPacket := a.CreateDefPacketIdOnly()
-	workerListPacket.TaskGroup = proto.TaskGroup_TASK_GROUP
-	workerListPacket.TaskType = &proto.RequestPacket_GroupTaskType{GroupTaskType: &proto.GroupRequestPacket{
-		GroupTaskTypes: proto.TaskGroupTypes_TYPE_QUERY_WORKER_IDS,
-		Names:          toQueryWorkers,
-	}}
+	if len(toQueryWorkers) > 0 {
+		workerListPacket := a.CreateDefPacket()
+		workerListPacket.TaskGroup = proto.TaskGroup_TASK_GROUP
+		workerListPacket.TaskType = &proto.RequestPacket_GroupTaskType{GroupTaskType: &proto.GroupRequestPacket{
+			GroupTaskTypes: proto.TaskGroupTypes_TYPE_QUERY_WORKER_IDS,
+			Names:          toQueryWorkers,
+		}}
 
-	response, err := a.PostRequest(workerListPacket)
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
+		response, err := a.PostRequest(workerListPacket)
+		if err != nil {
+			return nil, err
+		}
 
-	groupValidMap := make(map[string]bool)
-	for _, worker := range response.GroupResponse {
-		if worker.GetGroupName() != "" {
+		if response.GetStatus() == consts.StatusError {
+			logger.Error("Server response reported exception: %s", response.GetErrorCause())
+		}
+
+		for _, worker := range response.GroupResponse {
+			if worker.GetWorkerInfo() != nil && !worker.GetIsAlive() {
+				logger.Warn("Worker %s (%s) identified but not alive, Ignoring...", logger.ShortHash(worker.GetWorkerInfo().GetWorkerName()), worker.GetWorkerInfo().GetWorkerName())
+				continue
+			}
+
+			if worker.GetGroupName() != "" {
+				if worker.GetWorkerInfo() != nil {
+					if !GroupValidMap[worker.GetGroupName()] {
+						GroupValidMap[worker.GetGroupName()] = true
+						if a.DefaultArgs.Verbose {
+							logger.Tip("[DEBUG] Identified group: %s", worker.GetGroupName())
+						}
+					}
+
+					workerRealIds[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
+					WorkersIdCache[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
+				} else {
+					logger.Warn("Requested group name \"%s\" not exists. Skipping...", worker.GetRequestedName())
+				}
+				continue
+			}
+
 			if worker.GetWorkerInfo() != nil {
-				if !groupValidMap[worker.GetGroupName()] {
-					groupValidMap[worker.GetGroupName()] = true
-					if a.DefaultArgs.Verbose {
-						logger.Tip("[DEBUG] Identified group: %s", worker.GetGroupName())
+				workerRealIds[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
+				WorkersIdCache[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
+
+				if a.DefaultArgs.Verbose {
+					if worker.RequestedName == worker.GetWorkerInfo().GetWorkerId() {
+						logger.Tip("[DEBUG] Identified worker as Id: %s", logger.ShortHash(worker.GetWorkerInfo().GetWorkerId()))
+					} else {
+						logger.Tip("[DEBUG] Identified worker as Name: %s", logger.ShortHash(worker.GetWorkerInfo().GetWorkerId()))
 					}
 				}
-
-				workerRealIds[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
-				a.WorkersIdCache[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
-			} else {
-				logger.Warn("Requested group name \"%s\" not exists. Skipping...", worker.GetRequestedName())
+				continue
 			}
-			continue
+			logger.Warn("Requested identify \"%s\" is nor id, name, group; Skipping...", worker.GetRequestedName())
 		}
-
-		if worker.GetWorkerInfo() != nil {
-			workerRealIds[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
-			a.WorkersIdCache[worker.GetWorkerInfo().GetWorkerId()] = worker.GetWorkerInfo().GetWorkerName()
-
-			if a.DefaultArgs.Verbose {
-				if worker.RequestedName == worker.GetWorkerInfo().GetWorkerId() {
-					logger.Tip("[DEBUG] Identified worker as Id: %s", logger.ShortHash(worker.GetWorkerInfo().GetWorkerId()))
-				} else {
-					logger.Tip("[DEBUG] Identified worker as Name: %s", logger.ShortHash(worker.GetWorkerInfo().GetWorkerId()))
-				}
-			}
-			continue
-		}
-		logger.Warn("Requested identify \"%s\" is nor id, name, group; Skipping...", worker.GetRequestedName())
 	}
 
 	keys := make([]string, 0, len(workerRealIds))
 	for k := range workerRealIds {
 		keys = append(keys, k)
 	}
-	return a.CreateDefPacketIdOnly(keys...)
+
+	if len(keys) < 1 {
+		return nil, fmt.Errorf("no worker identified for %v", workers)
+	}
+	return keys, nil
 }
 
-func (a *CmdTask[T]) CreateDefPacketIdOnly(workers ...string) *proto.RequestPacket {
+func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
 	packet := &proto.RequestPacket{
 		TaskGroup: a.TaskGroups,
 	}
@@ -137,15 +160,12 @@ func (a *CmdTask[T]) CreateDefPacketIdOnly(workers ...string) *proto.RequestPack
 
 //goland:noinspection HttpUrlsUsage
 func (a *CmdTask[T]) PostRequestOnly(requestPacket *proto.RequestPacket) error {
-	var paths = fmt.Sprintf(consts.APIRouteSchema, "v1", consts.ConnTypeAdmin)
-	var addr = fmt.Sprintf("http://%s:%d%s", a.DefaultArgs.Address, a.DefaultArgs.Port, paths)
-
 	data, err := protojson.Marshal(requestPacket)
 	if err != nil {
 		return err
 	}
 
-	resp, err := http.Post(addr, "application/json", bytes.NewBuffer(data))
+	resp, err := http.Post(a.GetServerAddr(), "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}

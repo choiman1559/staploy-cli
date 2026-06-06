@@ -13,11 +13,16 @@ type GroupAddTask struct {
 }
 
 func (task *GroupAddTask) MainCmd() error {
-	requestPacket := task.CreateDefPacketIdOnly()
+	requestPacket := task.CreateDefPacket()
+	workers, err := task.ParseWorkers(true, task.CmdArgs.WorkerId...)
+	if err != nil {
+		return err
+	}
+
 	requestPacket.TaskType = &proto.RequestPacket_GroupTaskType{GroupTaskType: &proto.GroupRequestPacket{
 		GroupTaskTypes: proto.TaskGroupTypes_TYPE_GROUP_ADD_WORKER,
 		GroupName:      &task.CmdArgs.GroupName,
-		Names:          task.CmdArgs.WorkerId,
+		Names:          workers,
 	}}
 
 	response, err := task.PostRequest(requestPacket)

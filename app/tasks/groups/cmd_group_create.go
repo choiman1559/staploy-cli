@@ -13,7 +13,7 @@ type GroupCreateTask struct {
 }
 
 func (task *GroupCreateTask) MainCmd() error {
-	requestPacket := task.CreateDefPacketIdOnly()
+	requestPacket := task.CreateDefPacket()
 	requestPacket.TaskType = &proto.RequestPacket_GroupTaskType{GroupTaskType: &proto.GroupRequestPacket{
 		GroupTaskTypes: proto.TaskGroupTypes_TYPE_GROUP_CREATE,
 		GroupName:      &task.CmdArgs.GroupName,

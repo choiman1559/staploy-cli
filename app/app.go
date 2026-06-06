@@ -25,6 +25,7 @@ func HandleProcessInvoke() {
 		UseWorkerIdOnly: cmds.Args.UseIdOnly,
 	}
 
+	cmds.InitCache()
 	var taskInterface cmds.CmdTaskInterface
 
 	checkList := []struct {

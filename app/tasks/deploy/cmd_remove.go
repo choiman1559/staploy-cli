@@ -14,6 +14,12 @@ type RemoveCmdTask struct {
 }
 
 func (task *RemoveCmdTask) MainCmd() error {
+	workers, err := task.ParseWorkers(false, task.CmdArgs.WorkerId...)
+	if err != nil {
+		return err
+	}
+
+	task.CmdArgs.WorkerId = workers
 	if task.CmdArgs.AutoRemove {
 		return task.RemoveAuto()
 	}
@@ -21,7 +27,6 @@ func (task *RemoveCmdTask) MainCmd() error {
 }
 
 func (task *RemoveCmdTask) RemoveAuto() error {
-	//TODO: Opt-in group into lists
 	for _, workerId := range task.CmdArgs.WorkerId {
 		packet := task.CreateDefPacket(workerId)
 		packet.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE
@@ -37,7 +42,7 @@ func (task *RemoveCmdTask) RemoveAuto() error {
 			continue
 		}
 
-		removePacket := task.CreateDefPacketIdOnly(packet.GetWorker()[0].GetWorkerId())
+		removePacket := task.CreateDefPacket(packet.GetWorker()[0].GetWorkerId())
 		removePacket.TaskType = &proto.RequestPacket_DeployTaskType{DeployTaskType: proto.TaskDeployTypes_TYPE_DEPLOY_DEL_VERSION}
 
 		for _, v := range responsePacket.GetWorkerResponse()[0].GetWorkerInfo().GetInstalledApp() {

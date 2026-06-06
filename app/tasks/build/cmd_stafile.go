@@ -17,11 +17,9 @@ import (
 type StaFileTask struct {
 	cmds.CmdTaskInterface
 	cmds.CmdTask[cmds.StaFileCmd]
-	WorkerInfo map[string]string
 }
 
 func (a *StaFileTask) MainCmd() error {
-	a.WorkerInfo = make(map[string]string)
 	_, err := os.Stat(a.CmdArgs.ConfigFile)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -61,25 +59,15 @@ func (a *StaFileTask) MainCmd() error {
 }
 
 func (a *StaFileTask) FormatWorker(workerIdOrName string) string {
-	realId, _ := a.CheckWorkerValid(workerIdOrName)
-	return fmt.Sprintf("%s (%s)", logger.ShortHash(realId), a.WorkerInfo[realId])
-}
+	realId, err := a.ParseWorkers(true, workerIdOrName)
+	if err != nil || len(realId) != 1 {
+		return ""
+	}
 
-func (a *StaFileTask) CheckWorkerValid(workerIdOrName string) (string, error) {
 	if strings.HasPrefix(workerIdOrName, "group:") {
-		return workerIdOrName, nil
+		return workerIdOrName
 	}
-
-	for id, name := range a.WorkerInfo {
-		if workerIdOrName == id || workerIdOrName == name {
-			return id, nil
-		}
-	}
-
-	if a.DefaultArgs.UseWorkerIdOnly {
-		return "", fmt.Errorf("worker id %s not found. Check worker is connected to server", workerIdOrName)
-	}
-	return "", fmt.Errorf("worker id or name %s not found. Check worker is connected to server", workerIdOrName)
+	return fmt.Sprintf("%s (%s)", logger.ShortHash(realId[0]), cmds.WorkersIdCache[realId[0]])
 }
 
 func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
@@ -100,7 +88,7 @@ func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 	}
 
 	logger.Process("Syncing with Server (%s:%d)...", defaultArgs.Address, defaultArgs.Port)
-	workerListPacket := a.CreateDefPacketIdOnly()
+	workerListPacket := a.CreateDefPacket()
 	workerListPacket.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE
 	workerListPacket.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_CONNECTED}
 
@@ -117,12 +105,8 @@ func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 		return fmt.Errorf("server responded with %s", response.GetErrorCause())
 	}
 
-	for _, workerInfo := range response.WorkerResponse {
-		a.WorkerInfo[workerInfo.GetWorkerInfo().GetWorkerId()] = workerInfo.GetWorkerInfo().GetWorkerName()
-	}
-
 	if a.DefaultArgs.Verbose {
-		logger.Tip("[DEBUG] Current workers are %+v", a.WorkerInfo)
+		logger.Tip("[DEBUG] Current workers are %+v", response.GetWorkerResponse())
 	}
 
 	err = a.processManage(defaultArgs, staployFile.Manages)

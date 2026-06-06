@@ -14,8 +14,12 @@ type ListCmdTask struct {
 }
 
 func (a *ListCmdTask) MainCmd() error {
-	packet := a.CreateDefPacket(a.CmdArgs.WorkerId...)
+	workers, err := a.ParseWorkers(false, a.CmdArgs.WorkerId...)
+	if err != nil {
+		return err
+	}
 
+	packet := a.CreateDefPacket(workers...)
 	if a.CmdArgs.Refresh {
 		if len(a.CmdArgs.WorkerId) <= 0 {
 			return fmt.Errorf("using --refresh option requires at least one worker id")

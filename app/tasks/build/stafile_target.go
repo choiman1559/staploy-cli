@@ -13,17 +13,6 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 		logger.Process("Processing target \"%s\"", target.TargetName)
 		logger.EnableTree()
 
-		var aliveWorkers []string
-		for _, workerId := range target.WorkerIds {
-			_, err := a.CheckWorkerValid(workerId)
-			if err != nil {
-				logger.Warn("%v", err)
-			} else {
-				aliveWorkers = append(aliveWorkers, workerId)
-			}
-		}
-		target.WorkerIds = aliveWorkers
-
 		if target.Deploy != nil {
 			a.EvalTask(defArgs, &BashCommandTask{
 				workerId:   target.WorkerIds,

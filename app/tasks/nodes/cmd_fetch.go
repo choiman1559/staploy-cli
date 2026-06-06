@@ -16,8 +16,12 @@ type FetchCmdTask struct {
 }
 
 func (a *FetchCmdTask) MainCmd() error {
-	//TODO: Opt-in group into lists
-	packet := a.CreateDefPacket(a.CmdArgs.WorkerId)
+	workers, err := a.ParseWorkers(true, a.CmdArgs.WorkerId)
+	if err != nil {
+		return err
+	}
+
+	packet := a.CreateDefPacket(workers...)
 	packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_REQ_APP_INFO}
 
 	var isDetail = a.CmdArgs.Detail
