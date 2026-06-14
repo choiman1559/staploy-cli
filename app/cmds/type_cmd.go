@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,6 +28,8 @@ type CmdTaskInterface interface {
 	MainCmd() error
 }
 
+var DisableTls bool
+var SkipValidation bool
 var WorkersIdCache map[string]string
 var GroupValidMap map[string]bool
 
@@ -44,7 +47,9 @@ type CmdTask[T CmdTypes] struct {
 	TaskGroups  proto.TaskGroup
 }
 
-func InitCache() {
+func InitCache(disableTls bool, skipValidation bool) {
+	DisableTls = disableTls
+	SkipValidation = skipValidation
 	WorkersIdCache = make(map[string]string)
 	GroupValidMap = make(map[string]bool)
 }
@@ -165,7 +170,14 @@ func (a *CmdTask[T]) PostRequestOnly(requestPacket *proto.RequestPacket) error {
 		return err
 	}
 
-	resp, err := http.Post(a.GetServerAddr(), "application/json", bytes.NewBuffer(data))
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: SkipValidation,
+	}
+
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	client := &http.Client{Transport: transport}
+
+	resp, err := client.Post(a.GetServerAddr(), "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -185,7 +197,14 @@ func (a *CmdTask[T]) PostRequest(requestPacket *proto.RequestPacket) (*proto.Res
 		return nil, err
 	}
 
-	resp, err := http.Post(a.GetServerAddr(), "application/json", bytes.NewBuffer(data))
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: SkipValidation,
+	}
+
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	client := &http.Client{Transport: transport}
+
+	resp, err := client.Post(a.GetServerAddr(), "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +231,12 @@ func (a *CmdTask[T]) PostRequest(requestPacket *proto.RequestPacket) (*proto.Res
 
 //goland:noinspection HttpUrlsUsage
 func (a *CmdTask[T]) GetServerAddr() string {
+	httpPrefix := "https://"
+	if DisableTls {
+		httpPrefix = "http://"
+	}
+
 	var paths = fmt.Sprintf(consts.APIRouteSchema, "v1", consts.ConnTypeAdmin)
-	var addr = fmt.Sprintf("http://%s:%d%s", a.DefaultArgs.Address, a.DefaultArgs.Port, paths)
+	var addr = fmt.Sprintf("%s%s:%d%s", httpPrefix, a.DefaultArgs.Address, a.DefaultArgs.Port, paths)
 	return addr
 }

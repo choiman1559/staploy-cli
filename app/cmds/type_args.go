@@ -149,6 +149,10 @@ var Args struct {
 	NoColor   bool   `arg:"--no-color" help:"disables color output"`
 	Verbose   bool   `arg:"-v,--verbose" help:"verbose output"`
 
+	UserJwtToken   string `arg:"-u,--user-token,env:STAPLOY_USER_TOKEN" help:"user jwt token (Tip: get token using 'user login' command)"`
+	DisableTls     bool   `arg:"--disable-tls,env:STAPLOY_TLS_DISABLE" help:"disable TLS when connecting"`
+	SkipValidation bool   `arg:"--skip-validation,env:STAPLOY_TLS_NOCHECK" help:"skip validation of tls certificates"`
+
 	Create *CreateCmd `arg:"subcommand:create" help:"create newly or update information of application"`
 	Delete *DeleteCmd `arg:"subcommand:delete" help:"delete a application"`
 	Apps   *AppsCmd   `arg:"subcommand:apps" help:"list all application or versions available on remote server"`

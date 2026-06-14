@@ -25,7 +25,7 @@ func HandleProcessInvoke() {
 		UseWorkerIdOnly: cmds.Args.UseIdOnly,
 	}
 
-	cmds.InitCache()
+	cmds.InitCache(cmds.Args.DisableTls, cmds.Args.SkipValidation)
 	var taskInterface cmds.CmdTaskInterface
 
 	checkList := []struct {

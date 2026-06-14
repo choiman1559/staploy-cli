@@ -2,6 +2,7 @@ package apps
 
 import (
 	"bytes"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -115,7 +116,13 @@ func (task *UploadCmdTask) UploadFile(filePath string) (string, error) {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	req.Header.Set(consts.BLOB_REQ_TYPE, consts.BLOB_REQ_TYPE_UPLOAD)
 
-	client := &http.Client{}
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: cmds.SkipValidation,
+	}
+
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	client := &http.Client{Transport: transport}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
