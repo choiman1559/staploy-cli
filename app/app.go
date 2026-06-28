@@ -112,7 +112,7 @@ func HandleProcessInvoke() {
 		}},
 		{cmds.Args.User != nil, func() cmds.CmdTaskInterface {
 			t := &user.UserCmdTask{}
-			t.Init(defaultArgs, *cmds.Args.User, proto.TaskGroup_TASK_NONE)
+			t.Init(defaultArgs, *cmds.Args.User, proto.TaskGroup_TASK_USER)
 			return t
 		}},
 	}
