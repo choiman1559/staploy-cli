@@ -83,6 +83,10 @@ func getPermFlags(flags []cmds.CommandPermEnum) int32 {
 			flagValue = flagValue | int32(proto.PermissionFlag_NODE_SET)
 			break
 
+		case cmds.Query:
+			flagValue = flagValue | int32(proto.PermissionFlag_QUERY_ENDPOINT)
+			break
+
 		case cmds.Group:
 			flagValue = flagValue | int32(proto.PermissionFlag_GROUP_MANAGE)
 			break

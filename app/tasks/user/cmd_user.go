@@ -42,6 +42,11 @@ func (task *UserCmdTask) MainCmd() error {
 			t.Init(task.DefaultArgs, *cmds.Args.User.UserList, proto.TaskGroup_TASK_USER)
 			return t
 		}},
+		{cmds.Args.User.UserAudit != nil, func() cmds.CmdTaskInterface {
+			t := &UserAuditTask{}
+			t.Init(task.DefaultArgs, *cmds.Args.User.UserAudit, proto.TaskGroup_TASK_USER)
+			return t
+		}},
 	}
 
 	for _, item := range checkList {

@@ -18,7 +18,7 @@ type CmdTypes interface {
 	AppsCmd | BashCmd | BuildCmd | CreateCmd | DeleteCmd | DisconnCmd |
 		FetchCmd | ListCmd | PushCmd | RemoveCmd | SetCmd | UploadCmd | StaFileCmd |
 		GroupCmd | GroupAddCmd | GroupCreateCmd | GroupDeleteCmd | GroupListCmd | GroupRemoveCmd |
-		UserCmd | UserCreateCmd | UserLoginCmd | UserRemoveCmd | UserPermissionsCmd | UserListCmd
+		UserCmd | UserCreateCmd | UserLoginCmd | UserRemoveCmd | UserPermissionsCmd | UserListCmd | UserAuditCmd
 }
 
 type TaskTypes interface {

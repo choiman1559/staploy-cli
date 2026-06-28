@@ -148,6 +148,7 @@ type UserCmd struct {
 	UserRemove *UserRemoveCmd      `arg:"subcommand:remove" help:"remove a user"`
 	UserPerm   *UserPermissionsCmd `arg:"subcommand:perm" help:"perm permission to user"`
 	UserList   *UserListCmd        `arg:"subcommand:list" help:"list users"`
+	UserAudit  *UserAuditCmd       `arg:"subcommand:audit" help:"audit the user"`
 }
 
 type UserLoginCmd struct {
@@ -167,6 +168,9 @@ type UserListCmd struct {
 	UserName string `arg:"-n,--user-name" help:"user name to find, blank if get all users"`
 }
 
+type UserAuditCmd struct {
+}
+
 type CommandPermEnum string
 
 const (
@@ -179,6 +183,7 @@ const (
 	Remove  CommandPermEnum = "remove"
 	Set     CommandPermEnum = "set"
 	Group   CommandPermEnum = "group"
+	Query   CommandPermEnum = "query"
 	User    CommandPermEnum = "user"
 	Admin   CommandPermEnum = "admin"
 )

@@ -72,6 +72,9 @@ func ParsePermissionsList(perm uint32) string {
 	if perm&uint32(proto.PermissionFlag_NODE_REMOVE) != 0 {
 		active = append(active, "NODE_REMOVE")
 	}
+	if perm&uint32(proto.PermissionFlag_QUERY_ENDPOINT) != 0 {
+		active = append(active, "QUERY_ENDPOINT")
+	}
 	if perm&uint32(proto.PermissionFlag_NODE_REMOVE) != 0 {
 		active = append(active, "NODE_DISCONN")
 	}
@@ -91,7 +94,7 @@ func ParsePermissionsList(perm uint32) string {
 
 func PrintUserMetadataList(userMetadataList []*proto.UserMetadata) {
 	totalRecords := len(userMetadataList)
-	logger.Info("Fetched %d user metadata %s successfully.\n\n",
+	logger.Info("Fetched %d user metadata %s successfully.\n",
 		totalRecords, map[bool]string{true: "records", false: "record"}[totalRecords > 1])
 
 	if totalRecords == 0 {
