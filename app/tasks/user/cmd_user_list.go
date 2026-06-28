@@ -5,6 +5,7 @@ import (
 	"os"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
+	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 	"strings"
 	"text/tabwriter"
@@ -90,7 +91,7 @@ func ParsePermissionsList(perm uint32) string {
 
 func PrintUserMetadataList(userMetadataList []*proto.UserMetadata) {
 	totalRecords := len(userMetadataList)
-	fmt.Printf("[+]  Fetched %d user metadata %s successfully.\n\n",
+	logger.Info("Fetched %d user metadata %s successfully.\n\n",
 		totalRecords, map[bool]string{true: "records", false: "record"}[totalRecords > 1])
 
 	if totalRecords == 0 {

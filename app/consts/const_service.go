@@ -9,11 +9,11 @@ const (
 )
 
 const (
-	InfoPrefix    = "[+] "
-	SkipPrefix    = "[-] "
-	ErrorPrefix   = "[!] "
-	ProcessPrefix = "[*] "
-	WarningPrefix = "[?] "
+	InfoPrefix    = "[+]"
+	SkipPrefix    = "[-]"
+	ErrorPrefix   = "[!]"
+	ProcessPrefix = "[*]"
+	WarningPrefix = "[?]"
 )
 
 const PACKAGE_DIR_SHARE = "share"
