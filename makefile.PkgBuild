@@ -1,7 +1,7 @@
 OUT_DIR      := out
 LIB_VER      := $(shell go version)
-VERSION_NAME := 0.1.0
-CLI_TOOL     := staploy-cli
+VERSION_NAME := 1.0.0
+CLI_TOOL     := /home/cuj1559/Documents/Staploy/staploy-cli/out/temp/go_build_staploy_cli
 
 ARCHES := 386 amd64 arm arm64 riscv64 mipsle mips64le
 .PHONY: buildAll buildPkg clean_out createPkg $(ARCHES)
@@ -16,7 +16,7 @@ createPkg:
 		--i386 $(OUT_DIR)/386 --x86_64 $(OUT_DIR)/amd64 --arm $(OUT_DIR)/arm \
 		--aarch64 $(OUT_DIR)/arm64 --riscv64 $(OUT_DIR)/riscv64 \
 		--mipsel $(OUT_DIR)/mipsle --mips64el $(OUT_DIR)/mips64le \
-		--app-name "staploy-worker" --executable "staploy-cli" -o $(OUT_DIR) \
+		--app-name "staploy-cli" --executable "staploy-cli" -o $(OUT_DIR) \
 		--version-name "$(VERSION_NAME)" --lib-version "$(LIB_VER)"
 
 clean_out:

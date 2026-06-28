@@ -17,7 +17,8 @@ import (
 type CmdTypes interface {
 	AppsCmd | BashCmd | BuildCmd | CreateCmd | DeleteCmd | DisconnCmd |
 		FetchCmd | ListCmd | PushCmd | RemoveCmd | SetCmd | UploadCmd | StaFileCmd |
-		GroupCmd | GroupAddCmd | GroupCreateCmd | GroupDeleteCmd | GroupListCmd | GroupRemoveCmd
+		GroupCmd | GroupAddCmd | GroupCreateCmd | GroupDeleteCmd | GroupListCmd | GroupRemoveCmd |
+		UserCmd | UserCreateCmd | UserLoginCmd | UserRemoveCmd | UserPermissionsCmd | UserListCmd
 }
 
 type TaskTypes interface {
@@ -30,6 +31,7 @@ type CmdTaskInterface interface {
 
 var DisableTls bool
 var SkipValidation bool
+var UserJwtToken string
 var WorkersIdCache map[string]string
 var GroupValidMap map[string]bool
 
@@ -47,9 +49,11 @@ type CmdTask[T CmdTypes] struct {
 	TaskGroups  proto.TaskGroup
 }
 
-func InitCache(disableTls bool, skipValidation bool) {
+func InitCache(disableTls bool, skipValidation bool, userJwtToken string) {
 	DisableTls = disableTls
 	SkipValidation = skipValidation
+	UserJwtToken = userJwtToken
+
 	WorkersIdCache = make(map[string]string)
 	GroupValidMap = make(map[string]bool)
 }
@@ -163,21 +167,13 @@ func (a *CmdTask[T]) CreateDefPacket(workers ...string) *proto.RequestPacket {
 	return packet
 }
 
-//goland:noinspection HttpUrlsUsage
 func (a *CmdTask[T]) PostRequestOnly(requestPacket *proto.RequestPacket) error {
 	data, err := protojson.Marshal(requestPacket)
 	if err != nil {
 		return err
 	}
 
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: SkipValidation,
-	}
-
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-	client := &http.Client{Transport: transport}
-
-	resp, err := client.Post(a.GetServerAddr(), "application/json", bytes.NewBuffer(data))
+	resp, err := a.PutRequest(&data)
 	if err != nil {
 		return err
 	}
@@ -197,14 +193,7 @@ func (a *CmdTask[T]) PostRequest(requestPacket *proto.RequestPacket) (*proto.Res
 		return nil, err
 	}
 
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: SkipValidation,
-	}
-
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-	client := &http.Client{Transport: transport}
-
-	resp, err := client.Post(a.GetServerAddr(), "application/json", bytes.NewBuffer(data))
+	resp, err := a.PutRequest(&data)
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +216,31 @@ func (a *CmdTask[T]) PostRequest(requestPacket *proto.RequestPacket) (*proto.Res
 		return nil, err
 	}
 	return responsePacket, nil
+}
+
+func (a *CmdTask[T]) PutRequest(body *[]byte) (*http.Response, error) {
+	targetURL := a.GetServerAddr()
+	req, err := http.NewRequest("POST", targetURL, bytes.NewBuffer(*body))
+	if err != nil {
+		return nil, err
+	}
+
+	if UserJwtToken != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", UserJwtToken))
+	}
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: SkipValidation,
+	}
+
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	client := &http.Client{Transport: transport}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 //goland:noinspection HttpUrlsUsage

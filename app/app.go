@@ -9,6 +9,7 @@ import (
 	"staploy-cli/app/tasks/deploy"
 	"staploy-cli/app/tasks/groups"
 	"staploy-cli/app/tasks/nodes"
+	"staploy-cli/app/tasks/user"
 
 	"github.com/alexflint/go-arg"
 )
@@ -25,7 +26,7 @@ func HandleProcessInvoke() {
 		UseWorkerIdOnly: cmds.Args.UseIdOnly,
 	}
 
-	cmds.InitCache(cmds.Args.DisableTls, cmds.Args.SkipValidation)
+	cmds.InitCache(cmds.Args.DisableTls, cmds.Args.SkipValidation, cmds.Args.UserJwtToken)
 	var taskInterface cmds.CmdTaskInterface
 
 	checkList := []struct {
@@ -107,6 +108,11 @@ func HandleProcessInvoke() {
 		{cmds.Args.Set != nil, func() cmds.CmdTaskInterface {
 			t := &deploy.SetCmdTask{}
 			t.Init(defaultArgs, *cmds.Args.Set, proto.TaskGroup_TASK_DEPLOY)
+			return t
+		}},
+		{cmds.Args.User != nil, func() cmds.CmdTaskInterface {
+			t := &user.UserCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.User, proto.TaskGroup_TASK_NONE)
 			return t
 		}},
 	}

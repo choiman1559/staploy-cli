@@ -142,6 +142,52 @@ type StaFileCmd struct {
 	ParseOnly  bool   `arg:"--parse-only" help:"Only parse and analyze staployfile for debugging"`
 }
 
+type UserCmd struct {
+	UserLogin  *UserLoginCmd       `arg:"subcommand:login" help:"login to user"`
+	UserCreate *UserCreateCmd      `arg:"subcommand:create" help:"create a user"`
+	UserRemove *UserRemoveCmd      `arg:"subcommand:remove" help:"remove a user"`
+	UserPerm   *UserPermissionsCmd `arg:"subcommand:perm" help:"perm permission to user"`
+	UserList   *UserListCmd        `arg:"subcommand:list" help:"list users"`
+}
+
+type UserLoginCmd struct {
+	UserName string `arg:"-n,--user-name,required" help:"user name"`
+}
+
+type UserCreateCmd struct {
+	UserName string `arg:"-n,--user-name,required" help:"user name"`
+	Refresh  bool   `arg:"-r,--refresh" help:"refresh user token, not creating new user."`
+}
+
+type UserRemoveCmd struct {
+	UserName string `arg:"-n,--user-name,required" help:"user name"`
+}
+
+type UserListCmd struct {
+	UserName string `arg:"-n,--user-name" help:"user name to find, blank if get all users"`
+}
+
+type CommandPermEnum string
+
+const (
+	Create  CommandPermEnum = "create"
+	Delete  CommandPermEnum = "delete"
+	Upload  CommandPermEnum = "upload"
+	Bash    CommandPermEnum = "bash"
+	Disconn CommandPermEnum = "disconn"
+	Push    CommandPermEnum = "push"
+	Remove  CommandPermEnum = "remove"
+	Set     CommandPermEnum = "set"
+	Group   CommandPermEnum = "group"
+	User    CommandPermEnum = "user"
+	Admin   CommandPermEnum = "admin"
+)
+
+type UserPermissionsCmd struct {
+	UserName string            `arg:"-n,--user-name,required" help:"user name"`
+	PermCmd  []CommandPermEnum `arg:"-c,--perm-cmds,required" help:"perm commands to enable (commands: create, delete, upload, bash, disconn, push, remove, set, group, user)"`
+}
+
 var Args struct {
 	Address   string `arg:"-a,env:STAPLOY_HOST_ADDR" help:"overrides server address. can be preset with STAPLOY_HOST_ADDR environment variable"`
 	Port      int    `arg:"-p,env:STAPLOY_HOST_PORT" help:"overrides server port. can be preset with STAPLOY_HOST_PORT environment variable"`
@@ -170,4 +216,5 @@ var Args struct {
 	Group *GroupCmd   `arg:"subcommand:group" help:"manage groups of workers"`
 	Build *BuildCmd   `arg:"subcommand:build" help:"build a distributable package"`
 	File  *StaFileCmd `arg:"subcommand:file" help:"run HCL-like staployfile for deploy & management workers as code"`
+	User  *UserCmd    `arg:"subcommand:user" help:"login, create, manage a user"`
 }
