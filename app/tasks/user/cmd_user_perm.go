@@ -47,7 +47,7 @@ func (task *UserPermTask) MainCmd() error {
 }
 
 func getPermFlags(flags []cmds.CommandPermEnum) int32 {
-	var flagValue = int32(proto.PermissionFlag_NONE)
+	var flagValue = int32(proto.PermissionFlag_USERS_NONE)
 
 	for _, flag := range flags {
 		switch flag {
