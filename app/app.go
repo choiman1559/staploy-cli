@@ -9,6 +9,7 @@ import (
 	"staploy-cli/app/tasks/deploy"
 	"staploy-cli/app/tasks/groups"
 	"staploy-cli/app/tasks/nodes"
+	"staploy-cli/app/tasks/registry"
 	"staploy-cli/app/tasks/user"
 
 	"github.com/alexflint/go-arg"
@@ -113,6 +114,11 @@ func HandleProcessInvoke() {
 		{cmds.Args.User != nil, func() cmds.CmdTaskInterface {
 			t := &user.UserCmdTask{}
 			t.Init(defaultArgs, *cmds.Args.User, proto.TaskGroup_TASK_USER)
+			return t
+		}},
+		{cmds.Args.Registry != nil, func() cmds.CmdTaskInterface {
+			t := &registry.RegistryCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Registry, proto.TaskGroup_TASK_REGISTRY)
 			return t
 		}},
 	}

@@ -5,7 +5,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
@@ -18,7 +21,9 @@ type CmdTypes interface {
 	AppsCmd | BashCmd | BuildCmd | CreateCmd | DeleteCmd | DisconnCmd |
 		FetchCmd | ListCmd | PushCmd | RemoveCmd | SetCmd | UploadCmd | StaFileCmd |
 		GroupCmd | GroupAddCmd | GroupCreateCmd | GroupDeleteCmd | GroupListCmd | GroupRemoveCmd |
-		UserCmd | UserCreateCmd | UserLoginCmd | UserRemoveCmd | UserPermissionsCmd | UserListCmd | UserAuditCmd
+		UserCmd | UserCreateCmd | UserLoginCmd | UserRemoveCmd | UserPermissionsCmd | UserListCmd | UserAuditCmd |
+		RegistryCmd | RegistryPushLocalCmd | RegistryRemoveLocalCmd | RegistryListLocalCmd | RegistryPullCmd | RegistryListRepoCmd |
+		RegistryAddRepoCmd | RegistryRemoveRepoCmd | RegistryManageRepoTokenCmd | RegistryUpdateCacheCmd | RegistryListPackageCmd
 }
 
 type TaskTypes interface {
@@ -47,6 +52,7 @@ type CmdTask[T CmdTypes] struct {
 	DefaultArgs DefaultArgs
 	CmdArgs     T
 	TaskGroups  proto.TaskGroup
+	connType    string
 }
 
 func InitCache(disableTls bool, skipValidation bool, userJwtToken string) {
@@ -62,6 +68,10 @@ func (a *CmdTask[T]) Init(defArgs DefaultArgs, cmdArgs T, group proto.TaskGroup)
 	a.DefaultArgs = defArgs
 	a.CmdArgs = cmdArgs
 	a.TaskGroups = group
+}
+
+func (a *CmdTask[T]) OverrideConnType(connType string) {
+	a.connType = connType
 }
 
 func (a *CmdTask[T]) ParseWorkers(disableGroup bool, workers ...string) ([]string, error) {
@@ -250,7 +260,84 @@ func (a *CmdTask[T]) GetServerAddr() string {
 		httpPrefix = "http://"
 	}
 
-	var paths = fmt.Sprintf(consts.APIRouteSchema, "v1", consts.ConnTypeAdmin)
+	connType := consts.ConnTypeAdmin
+	if a.connType != "" {
+		connType = a.connType
+	}
+
+	var paths = fmt.Sprintf(consts.APIRouteSchema, "v1", connType)
 	var addr = fmt.Sprintf("%s%s:%d%s", httpPrefix, a.DefaultArgs.Address, a.DefaultArgs.Port, paths)
 	return addr
+}
+
+func (a *CmdTask[T]) UploadFile(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			return
+		}
+	}(file)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	part, err := writer.CreateFormFile(consts.BLOB_FIELD_PACKAGE, filepath.Base(filePath))
+	if err != nil {
+		return "", err
+	}
+
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return "", err
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return "", err
+	}
+
+	targetURL := a.GetServerAddr()
+	req, err := http.NewRequest("POST", targetURL, body)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set(consts.BLOB_REQ_TYPE, consts.BLOB_REQ_TYPE_UPLOAD)
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: SkipValidation,
+	}
+
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	client := &http.Client{Transport: transport}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			return
+		}
+	}(resp.Body)
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	responseData := &proto.ResponsePacket{}
+	err = protojson.Unmarshal(respBytes, responseData)
+	if err != nil {
+		return "", err
+	}
+	return responseData.GetExtraData(), nil
 }

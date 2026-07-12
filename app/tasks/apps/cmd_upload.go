@@ -1,22 +1,12 @@
 package apps
 
 import (
-	"bytes"
-	"crypto/tls"
 	"errors"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"net/http"
-	"os"
-	"path/filepath"
 	"staploy-cli/app/cmds"
-	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 	"strings"
-
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type UploadCmdTask struct {
@@ -74,76 +64,4 @@ func (task *UploadCmdTask) MainCmd() error {
 	logger.Tip("Tip: Check available packages using \"staploy-cli apps -n %s\"", packageMetadata.GetApp().GetAppName())
 
 	return nil
-}
-
-func (task *UploadCmdTask) UploadFile(filePath string) (string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			return
-		}
-	}(file)
-
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	part, err := writer.CreateFormFile(consts.BLOB_FIELD_PACKAGE, filepath.Base(filePath))
-	if err != nil {
-		return "", err
-	}
-
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return "", err
-	}
-
-	err = writer.Close()
-	if err != nil {
-		return "", err
-	}
-
-	targetURL := task.GetServerAddr()
-	req, err := http.NewRequest("POST", targetURL, body)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set(consts.BLOB_REQ_TYPE, consts.BLOB_REQ_TYPE_UPLOAD)
-
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: cmds.SkipValidation,
-	}
-
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-	client := &http.Client{Transport: transport}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
-	}(resp.Body)
-
-	respBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	responseData := &proto.ResponsePacket{}
-	err = protojson.Unmarshal(respBytes, responseData)
-	if err != nil {
-		return "", err
-	}
-	return responseData.GetExtraData(), nil
 }

@@ -193,6 +193,62 @@ type UserPermissionsCmd struct {
 	PermCmd  []CommandPermEnum `arg:"-c,--perm-cmds,required" help:"perm commands to enable (commands: create, delete, upload, bash, disconn, push, remove, set, group, user)"`
 }
 
+type RegistryCmd struct {
+	PushLocal   *RegistryPushLocalCmd   `arg:"subcommand:push-local" help:"push package to local registry"`
+	RemoveLocal *RegistryRemoveLocalCmd `arg:"subcommand:remove-local" help:"remove package from local registry"`
+	ListLocal   *RegistryListLocalCmd   `arg:"subcommand:list-local" help:"list of packages of local registry"`
+
+	Pull            *RegistryPullCmd            `arg:"subcommand:pull" help:"pull package from remote registry"`
+	ListRepo        *RegistryListRepoCmd        `arg:"subcommand:list-repo" help:"list of linked remote registry"`
+	AddRepo         *RegistryAddRepoCmd         `arg:"subcommand:add-repo" help:"add a repository into server"`
+	RemoveRepo      *RegistryRemoveRepoCmd      `arg:"subcommand:remove-repo" help:"remove a repository from server"`
+	ManageRepoToken *RegistryManageRepoTokenCmd `arg:"subcommand:token" help:"associate login access token for remote repository"`
+	List            *RegistryListPackageCmd     `arg:"subcommand:list" help:"list of available packages from remote registry"`
+	UpdateCache     *RegistryUpdateCacheCmd     `arg:"subcommand:update" help:"update cache of packages from remote registry"`
+}
+
+type RegistryPushLocalCmd struct {
+	PackageFile string `arg:"-f,--file,required" help:"package file to upload"`
+}
+
+type RegistryRemoveLocalCmd struct {
+	AppName string `arg:"-n,--app-name, required" help:"name of app to remove"`
+	Version string `arg:"-e,--version" help:"version of app to remove"`
+}
+
+type RegistryListLocalCmd struct {
+	AppName string `arg:"-n,--app-name" help:"name of app to list"`
+}
+
+type RegistryPullCmd struct {
+	AppName string `arg:"-n,--app-name, required" help:"name of app to pull"`
+	Version string `arg:"-e,--version" help:"version of app to pull"`
+}
+
+type RegistryListRepoCmd struct {
+}
+
+type RegistryAddRepoCmd struct {
+	RepoUrl []string `arg:"positional, required" help:"repository url to add"`
+}
+
+type RegistryRemoveRepoCmd struct {
+	RepoUrl []string `arg:"positional, required" help:"repository url to remove"`
+}
+
+type RegistryManageRepoTokenCmd struct {
+	RepoUrl string `arg:"-r,--repo-url, required" help:"repository url to add"`
+	Token   string `arg:"-t,--token" help:"token to add to repo"`
+}
+
+type RegistryListPackageCmd struct {
+	AppName string `arg:"-n,--app-name" help:"name of app to list"`
+}
+
+type RegistryUpdateCacheCmd struct {
+	RepoUrl []string `arg:"positional" help:"repository url to update cache"`
+}
+
 var Args struct {
 	Address   string `arg:"-a,env:STAPLOY_HOST_ADDR" help:"overrides server address. can be preset with STAPLOY_HOST_ADDR environment variable"`
 	Port      int    `arg:"-p,env:STAPLOY_HOST_PORT" help:"overrides server port. can be preset with STAPLOY_HOST_PORT environment variable"`
@@ -218,8 +274,9 @@ var Args struct {
 	Remove *RemoveCmd `arg:"subcommand:remove" help:"remove a package from a remote worker"`
 	Set    *SetCmd    `arg:"subcommand:set" help:"set a version of package to executable path from a remote worker"`
 
-	Group *GroupCmd   `arg:"subcommand:group" help:"manage groups of workers"`
-	Build *BuildCmd   `arg:"subcommand:build" help:"build a distributable package"`
-	File  *StaFileCmd `arg:"subcommand:file" help:"run HCL-like staployfile for deploy & management workers as code"`
-	User  *UserCmd    `arg:"subcommand:user" help:"login, create, manage a user"`
+	Group    *GroupCmd    `arg:"subcommand:group" help:"manage groups of workers"`
+	Build    *BuildCmd    `arg:"subcommand:build" help:"build a distributable package"`
+	File     *StaFileCmd  `arg:"subcommand:file" help:"run HCL-like staployfile for deploy & management workers as code"`
+	User     *UserCmd     `arg:"subcommand:user" help:"login, create, manage a user"`
+	Registry *RegistryCmd `arg:"subcommand:registry" help:"push or pull from a remote registry"`
 }

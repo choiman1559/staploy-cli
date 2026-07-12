@@ -1,11 +1,12 @@
 package consts
 
 const (
-	APIRouteSchema = "/api/%s/%s" // INFO: Schema => /api/{version}/{connection_type}
-	ConnTypeAdmin  = "admin"
-	ConnTypeWorker = "worker"
-	StatusError    = "error"
-	StatusOK       = "ok"
+	APIRouteSchema   = "/api/%s/%s" // INFO: Schema => /api/{version}/{connection_type}
+	ConnTypeAdmin    = "admin"
+	ConnTypeRegistry = "registry"
+	ConnTypeWorker   = "worker"
+	StatusError      = "error"
+	StatusOK         = "ok"
 )
 
 const (
