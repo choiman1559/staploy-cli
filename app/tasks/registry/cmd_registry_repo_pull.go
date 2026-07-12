@@ -1,0 +1,44 @@
+package registry
+
+import (
+	"fmt"
+	"staploy-cli/app/cmds"
+	"staploy-cli/app/logger"
+	"staploy-cli/app/proto"
+)
+
+type RegistryPullTask struct {
+	cmds.CmdTaskInterface
+	cmds.CmdTask[cmds.RegistryPullCmd]
+}
+
+func (task *RegistryPullTask) MainCmd() error {
+	requestPacket := task.CreateDefPacket()
+	if task.CmdArgs.AppName == "" {
+		return fmt.Errorf("app name is required")
+	}
+
+	appInfo := &proto.AppInfoFetch{
+		App: &proto.AppInfo{
+			AppName: task.CmdArgs.AppName,
+		},
+	}
+
+	if task.CmdTask.CmdArgs.Version != "" {
+		appInfo.AppVersion = []*proto.Version{{VersionName: task.CmdTask.CmdArgs.Version}}
+	}
+
+	registryRequest := &proto.RegistryRequestPacket{
+		TaskType: proto.TaskRegistryTypes_LOCAL_PULL_PACKAGE,
+		AppInfo:  appInfo,
+	}
+
+	requestPacket.TaskType = &proto.RequestPacket_RegistryTaskType{RegistryTaskType: registryRequest}
+	response, err := task.PostRequest(requestPacket)
+	if err != nil {
+		return err
+	}
+
+	logger.Info("Registry List Task Response: %v", response)
+	return nil
+}
