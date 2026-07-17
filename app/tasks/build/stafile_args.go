@@ -61,6 +61,7 @@ type Manage struct {
 	Create  *CreateTask `hcl:"create,block"`
 	Upload  *UploadTask `hcl:"upload,block"`
 	Delete  *DeleteTask `hcl:"delete,block"`
+	Pull    *PullTask   `hcl:"pull,block"`
 }
 
 type CreateTask struct {
@@ -73,4 +74,10 @@ type UploadTask struct {
 
 type DeleteTask struct {
 	Versions []string `hcl:"versions,optional"`
+}
+
+type PullTask struct {
+	AppName    string `hcl:"name,label"`
+	Version    string `hcl:"version"`
+	Repository string `hcl:"repository"`
 }

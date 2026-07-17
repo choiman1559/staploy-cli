@@ -40,8 +40,10 @@ func (task *UserLoginTask) MainCmd() error {
 	}
 
 	if response.GetStatus() == consts.StatusOK {
-		logger.Info("Login successes.")
-		logger.Tip("Tip: use \"export STAPLOY_USER_TOKEN=[YOUR_TOKEN]\" to use login credentials.")
+		if !task.CmdArgs.PrintTokenOnly {
+			logger.Info("Login successes.")
+			logger.Tip("Tip: use \"export STAPLOY_USER_TOKEN=[YOUR_TOKEN]\" to use login credentials.")
+		}
 		fmt.Printf("%s\n", *response.GetUserResponse().UserLoginInfo.UserToken)
 	} else {
 		logger.Error("login error: %s", response.GetErrorCause())

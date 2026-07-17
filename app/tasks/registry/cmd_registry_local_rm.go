@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"errors"
 	"fmt"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
@@ -41,6 +42,14 @@ func (task *RegistryRemoveLocalTask) MainCmd() error {
 		return err
 	}
 
-	logger.Info("Registry List Task Response: %v", response)
+	if len(response.GetRegistryResponse().GetAppInfo()) < 1 {
+		if response.GetErrorCause() != "" {
+			return errors.New(response.GetErrorCause())
+		}
+		return errors.New("could not find app info: " + task.CmdTask.CmdArgs.AppName)
+	}
+
+	packageMetadata := response.GetRegistryResponse().GetAppInfo()[0]
+	logger.Tip("Package removed: \"%s\" version %s", packageMetadata.GetApp().AppName, packageMetadata.GetCurrentVersion().GetVersionName())
 	return nil
 }

@@ -1,9 +1,12 @@
 package registry
 
 import (
+	"errors"
 	"staploy-cli/app/cmds"
+	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
+	"strings"
 )
 
 type RegistryUpdateCacheTask struct {
@@ -24,6 +27,22 @@ func (task *RegistryUpdateCacheTask) MainCmd() error {
 		return err
 	}
 
-	logger.Info("Registry List Task Response: %v", response)
+	if response.GetStatus() != consts.StatusOK {
+		if response.GetErrorCause() != "" {
+			return errors.New(response.GetErrorCause())
+		}
+		return errors.New("update repository package cache failed")
+	}
+
+	for _, repoUrl := range response.GetRegistryResponse().RepositoryUrl {
+		data := strings.Split(repoUrl, "$")
+		if data[1] != consts.StatusOK {
+			logger.Error("Fetch failed: %s (cause: %s)", data[0], data[1])
+			continue
+		}
+		logger.Info("Fetch ok: %s", data[0])
+	}
+
+	logger.Info("Successfully finished update repository cache")
 	return nil
 }

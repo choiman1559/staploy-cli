@@ -152,7 +152,8 @@ type UserCmd struct {
 }
 
 type UserLoginCmd struct {
-	UserName string `arg:"-n,--user-name,required" help:"user name"`
+	UserName       string `arg:"-n,--user-name,required" help:"user name"`
+	PrintTokenOnly bool   `arg:"--print-token" help:"prints token only. useful when pipelining in script."`
 }
 
 type UserCreateCmd struct {
@@ -221,8 +222,9 @@ type RegistryListLocalCmd struct {
 }
 
 type RegistryPullCmd struct {
-	AppName string `arg:"-n,--app-name, required" help:"name of app to pull"`
-	Version string `arg:"-e,--version" help:"version of app to pull"`
+	AppName    string `arg:"-n,--app-name, required" help:"name of app to pull"`
+	Version    string `arg:"-e,--version" help:"version of app to pull"`
+	Repository string `arg:"--repository" help:"specify repository name to pull"`
 }
 
 type RegistryListRepoCmd struct {

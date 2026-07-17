@@ -5,6 +5,7 @@ import (
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 	"staploy-cli/app/tasks/apps"
+	"staploy-cli/app/tasks/registry"
 )
 
 func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage) error {
@@ -45,6 +46,20 @@ func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage
 			err := t.MainCmd()
 			if err != nil {
 				logger.Error("Error deleting app \"%s\": %v", manage.AppName, err)
+			}
+		}
+
+		if manage.Pull != nil {
+			t := &registry.RegistryPullTask{}
+			t.Init(*defArgs, cmds.RegistryPullCmd{
+				AppName:    manage.Pull.AppName,
+				Version:    manage.Pull.Version,
+				Repository: manage.Pull.Repository,
+			}, proto.TaskGroup_TASK_REGISTRY)
+
+			err := t.MainCmd()
+			if err != nil {
+				logger.Error("Error pulling app \"%s\": %v", manage.AppName, err)
 			}
 		}
 

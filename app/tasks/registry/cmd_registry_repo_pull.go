@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"errors"
 	"fmt"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/logger"
@@ -33,12 +34,26 @@ func (task *RegistryPullTask) MainCmd() error {
 		AppInfo:  appInfo,
 	}
 
+	if task.CmdTask.CmdArgs.Repository != "" {
+		registryRequest.RepositoryUrl = []string{task.CmdTask.CmdArgs.Repository}
+	}
+
 	requestPacket.TaskType = &proto.RequestPacket_RegistryTaskType{RegistryTaskType: registryRequest}
 	response, err := task.PostRequest(requestPacket)
 	if err != nil {
 		return err
 	}
 
-	logger.Info("Registry List Task Response: %v", response)
+	if len(response.GetRegistryResponse().GetAppInfo()) < 1 {
+		if response.GetErrorCause() != "" {
+			return errors.New(response.GetErrorCause())
+		}
+		return errors.New("could not find app info: " + task.CmdTask.CmdArgs.AppName)
+	}
+
+	packageMetadata := response.GetRegistryResponse().GetAppInfo()[0]
+	packagePrinter := fmt.Sprintf("Package pulled: \"%s\" version %s from %s", packageMetadata.GetApp().AppName, packageMetadata.GetCurrentVersion().GetVersionName(), response.RegistryResponse.RepositoryUrl[0])
+
+	logger.Info("%s", packagePrinter)
 	return nil
 }

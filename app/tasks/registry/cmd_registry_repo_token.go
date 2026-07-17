@@ -1,7 +1,9 @@
 package registry
 
 import (
+	"errors"
 	"staploy-cli/app/cmds"
+	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 )
@@ -25,6 +27,13 @@ func (task *RegistryManageRepoTokenTask) MainCmd() error {
 		return err
 	}
 
-	logger.Info("Registry List Task Response: %v", response)
+	if response.GetStatus() != consts.StatusOK {
+		if response.GetErrorCause() != "" {
+			return errors.New(response.GetErrorCause())
+		}
+		return errors.New("registry associate token to repository failed")
+	}
+
+	logger.Info("Registry token successfully associated: %S", task.CmdArgs.RepoUrl)
 	return nil
 }
