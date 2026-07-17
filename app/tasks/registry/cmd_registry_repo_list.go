@@ -35,7 +35,7 @@ func printRepoLists(repoUrls []string) {
 
 	if total == 0 {
 		logger.Error("No registered repository sources found.")
-		logger.Tip("Tip: use \"staploy-cli repo add <URL>\" to register a new repository.")
+		logger.Tip("Tip: use \"staploy-cli registry add-repo <URL>\" to register a new repository.")
 		return
 	}
 

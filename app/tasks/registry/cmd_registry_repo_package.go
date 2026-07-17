@@ -61,7 +61,7 @@ func printPackageLists(lists map[string][]*AppVersionWithRepo) {
 
 	if totalApps == 0 {
 		logger.Error("No packages or repository indexing assets found.")
-		logger.Tip("Tip: use \"staploy-cli repo pull\" to refresh your package repository cache.")
+		logger.Tip("Tip: use \"staploy-cli registry update\" to refresh your package repository cache.")
 		return
 	}
 
