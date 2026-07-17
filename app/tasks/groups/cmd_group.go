@@ -58,3 +58,12 @@ func (task *GroupCmdTask) MainCmd() error {
 	err := taskInterface.MainCmd()
 	return err
 }
+
+func CollectErrorMessage(packet *proto.ResponsePacket) string {
+	if packet.GetErrorCause() != "" {
+		return packet.GetErrorCause()
+	} else if packet.GetExtraData() != "" {
+		return packet.GetExtraData()
+	}
+	return ""
+}

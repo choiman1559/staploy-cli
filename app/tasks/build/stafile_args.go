@@ -78,6 +78,6 @@ type DeleteTask struct {
 
 type PullTask struct {
 	AppName    string `hcl:"name,label"`
-	Version    string `hcl:"version"`
-	Repository string `hcl:"repository"`
+	Version    string `hcl:"version,optional"`
+	Repository string `hcl:"repository,optional"`
 }

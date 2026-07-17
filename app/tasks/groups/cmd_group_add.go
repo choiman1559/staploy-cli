@@ -37,7 +37,7 @@ func (task *GroupAddTask) MainCmd() error {
 			logger.Info("Added workers to group %s", task.CmdArgs.GroupName)
 		}
 	} else {
-		logger.Error("Failed to add workers to group %s, cause: %s", task.CmdArgs.GroupName, response.GetExtraData())
+		logger.Error("Failed to add workers to group %s, cause: %s", task.CmdArgs.GroupName, CollectErrorMessage(response))
 	}
 	return nil
 }

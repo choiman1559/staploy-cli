@@ -31,7 +31,7 @@ func (task *GroupDeleteTask) MainCmd() error {
 			logger.Tip("Deleted group %s", task.CmdArgs.GroupName)
 		}
 	} else {
-		logger.Error("Failed to delete group %s, cause: %s", task.CmdArgs.GroupName, response.GetExtraData())
+		logger.Error("Failed to delete group %s, cause: %s", task.CmdArgs.GroupName, CollectErrorMessage(response))
 	}
 	return nil
 }

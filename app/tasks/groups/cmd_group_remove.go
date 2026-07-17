@@ -37,7 +37,7 @@ func (task *GroupRemoveTask) MainCmd() error {
 			logger.Tip("Removed workers from group %s", task.CmdArgs.GroupName)
 		}
 	} else {
-		logger.Error("Failed to remove workers from group %s, cause: %s", task.CmdArgs.GroupName, response.GetExtraData())
+		logger.Error("Failed to remove workers from group %s, cause: %s", task.CmdArgs.GroupName, CollectErrorMessage(response))
 	}
 	return nil
 }
