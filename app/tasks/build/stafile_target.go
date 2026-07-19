@@ -127,7 +127,7 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 		}
 
 		logger.DisableTree(true)
-		logger.Tip("Finished building target \"%s\"", target.TargetName)
+		logger.Tip("Finished processing target \"%s\"", target.TargetName)
 	}
 	return nil
 }

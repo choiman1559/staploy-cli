@@ -44,6 +44,7 @@ func (a *StaFileTask) MainCmd() error {
 
 	diags = gohcl.DecodeBody(file.Body, nil, &staFile)
 	if diags.HasErrors() {
+		logger.Tip("%+v", diags)
 		return fmt.Errorf("decode error at %v", err)
 	}
 
@@ -51,9 +52,11 @@ func (a *StaFileTask) MainCmd() error {
 		logger.Tip("[DEBUG] Configuration is %+v", staFile)
 	}
 
-	a.DefaultArgs.UseWorkerIdOnly = staFile.Config.UseIdOnly
-	a.DefaultArgs.Port = staFile.Config.Port
-	a.DefaultArgs.Address = staFile.Config.Address
+	if staFile.Config != nil {
+		a.DefaultArgs.UseWorkerIdOnly = staFile.Config.UseIdOnly
+		a.DefaultArgs.Port = staFile.Config.Port
+		a.DefaultArgs.Address = staFile.Config.Address
+	}
 
 	return a.ParseStaFile(&staFile)
 }
@@ -71,7 +74,21 @@ func (a *StaFileTask) FormatWorker(workerIdOrName string) string {
 }
 
 func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
-	logger.Process("Parsing Staployfile... Found %d manages and %d targets", len(staployFile.Manages), len(staployFile.Targets))
+	logger.Process("Parsing Staployfile... Found %d build, %d manages and %d targets", len(staployFile.Builds), len(staployFile.Manages), len(staployFile.Targets))
+
+	if len(staployFile.Builds) > 0 {
+		err := a.processBuild(staployFile.Builds)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(staployFile.Manages) < 1 && len(staployFile.Targets) < 1 {
+		return nil
+	} else if staployFile.Config == nil {
+		return fmt.Errorf("manage and target block requires configure block")
+	}
+
 	defaultArgs := &cmds.DefaultArgs{
 		Address:         staployFile.Config.Address,
 		Port:            staployFile.Config.Port,
