@@ -49,7 +49,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 				logger.Error("Error executing global pre-build command, Abort build => %v", err)
 				return nil
 			}
-			logger.Info("Executed global pre-build command => %s", strings.TrimSuffix(out, "\n"))
+			logger.Info("Executed global pre-build command => %s", out)
 		}
 
 		buildCmd := cmds.BuildCmd{
@@ -88,7 +88,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 				if err != nil {
 					logger.Error("Error executing %s post-build command => %s: %v", arch, postCmd, err)
 				}
-				logger.Info("Executed %s post-build command => %s", arch, strings.TrimSuffix(out, "\n"))
+				logger.Info("Executed %s post-build command => %s", arch, out)
 			}
 
 			if build.PostBuild != "" {
@@ -96,7 +96,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 				if err != nil {
 					logger.Error("Error executing global post-build command => %s: %v", build.PostBuild, err)
 				}
-				logger.Info("Executed global post-build command => %s", strings.TrimSuffix(out, "\n"))
+				logger.Info("Executed global post-build command => %s", out)
 			}
 		}
 
@@ -123,7 +123,7 @@ func processArch(arch ArchTarget, postRun map[string]string) {
 			logger.Error("Error executing %s pre-build command, skipping => %v", arch.name, err)
 			return
 		}
-		logger.Info("Executed %s pre-build => %s", arch.name, strings.TrimSuffix(out, "\n"))
+		logger.Info("Executed %s pre-build => %s", arch.name, out)
 	}
 
 	arch.setCmdFn(parsedPath)
@@ -134,7 +134,7 @@ func processArch(arch ArchTarget, postRun map[string]string) {
 
 func execShell(command string) (string, error) {
 	out, err := exec.Command("bash", "-c", command).Output()
-	return string(out), err
+	return strings.TrimSuffix(string(out), "\n"), err
 }
 
 func parseExecArgs(args string) (string, error) {
