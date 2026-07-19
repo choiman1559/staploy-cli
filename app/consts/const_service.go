@@ -20,6 +20,7 @@ const (
 const PACKAGE_DIR_SHARE = "share"
 const PACKAGE_FILE_METADATA = ".metadata"
 const PACKAGE_FORMAT_VERSION = 1
+const BUILD_FILE_SHELL_PREFIX = "shell:"
 
 const BLOB_REQ_TYPE = "blob_req_type"
 const BLOB_REQ_TYPE_UPLOAD = "type_upload"

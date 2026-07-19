@@ -3,6 +3,7 @@ package build
 import (
 	"os/exec"
 	"staploy-cli/app/cmds"
+	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
 	"strings"
@@ -20,6 +21,27 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 		logger.EnableTree()
 		postRun := make(map[string]string)
 
+		outPutDir, err := parseExecArgs(build.OutputDir)
+		if err != nil {
+			logger.DisableTree(true)
+			logger.Error("Error parsing output_dir, Abort build => %v", err)
+			return nil
+		}
+
+		version, err := parseExecArgs(build.Version)
+		if err != nil {
+			logger.DisableTree(true)
+			logger.Error("Error parsing version, Abort build => %v", err)
+			return nil
+		}
+
+		libVersion, err := parseExecArgs(build.LibVersion)
+		if err != nil {
+			logger.DisableTree(true)
+			logger.Error("Error parsing lib_version, Abort build => %v", err)
+			return nil
+		}
+
 		if build.PreBuild != "" {
 			out, err := execShell(build.PreBuild)
 			if err != nil {
@@ -32,9 +54,9 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 
 		buildCmd := cmds.BuildCmd{
 			AppName:     build.AppName,
-			VersionName: build.Version,
-			LibVersion:  build.LibVersion,
-			OutputDir:   build.OutputDir,
+			VersionName: version,
+			LibVersion:  libVersion,
+			OutputDir:   outPutDir,
 			Executable:  build.Executables,
 		}
 
@@ -56,7 +78,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 
 		t := &PkgCmdTask{}
 		t.Init(a.DefaultArgs, buildCmd, proto.TaskGroup_TASK_MANAGE_APPS)
-		err := t.MainCmd()
+		err = t.MainCmd()
 
 		if err != nil {
 			logger.Error("Error processing build \"%s\": %v", build.AppName, err)
@@ -69,11 +91,13 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 				logger.Info("Executed %s post-build command => %s", arch, strings.TrimSuffix(out, "\n"))
 			}
 
-			out, err := execShell(build.PostBuild)
-			if err != nil {
-				logger.Error("Error executing global post-build command => %s: %v", build.PostBuild, err)
+			if build.PostBuild != "" {
+				out, err := execShell(build.PostBuild)
+				if err != nil {
+					logger.Error("Error executing global post-build command => %s: %v", build.PostBuild, err)
+				}
+				logger.Info("Executed global post-build command => %s", strings.TrimSuffix(out, "\n"))
 			}
-			logger.Info("Executed global post-build command => %s", strings.TrimSuffix(out, "\n"))
 		}
 
 		logger.DisableTree(true)
@@ -87,6 +111,12 @@ func processArch(arch ArchTarget, postRun map[string]string) {
 		return
 	}
 
+	parsedPath, err := parseExecArgs(arch.target.Path)
+	if err != nil {
+		logger.Error("Error parsing path \"%s\": %v", arch.target.Path, err)
+		return
+	}
+
 	if arch.target.PreBuild != "" {
 		out, err := execShell(arch.target.PreBuild)
 		if err != nil {
@@ -96,7 +126,7 @@ func processArch(arch ArchTarget, postRun map[string]string) {
 		logger.Info("Executed %s pre-build => %s", arch.name, strings.TrimSuffix(out, "\n"))
 	}
 
-	arch.setCmdFn(arch.target.Path)
+	arch.setCmdFn(parsedPath)
 	if arch.target.PostBuild != "" {
 		postRun[arch.name] = arch.target.PostBuild
 	}
@@ -105,4 +135,11 @@ func processArch(arch ArchTarget, postRun map[string]string) {
 func execShell(command string) (string, error) {
 	out, err := exec.Command("bash", "-c", command).Output()
 	return string(out), err
+}
+
+func parseExecArgs(args string) (string, error) {
+	if args == "" || !strings.HasPrefix(args, consts.BUILD_FILE_SHELL_PREFIX) {
+		return args, nil
+	}
+	return execShell(strings.TrimPrefix(args, consts.BUILD_FILE_SHELL_PREFIX))
 }
