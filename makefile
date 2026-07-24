@@ -8,6 +8,7 @@ GOPATH_DEFAULT := $(shell go env GOPATH)
 ifeq ($(GOPATH_DEFAULT),)
     GOPATH_DEFAULT := $(HOME)/go
 endif
+
 GOPATH_BIN := $(GOPATH_DEFAULT)/bin
 PROTO_FILES := $(shell find $(SRC_DIR) -name "*.proto")
 M_ARGS := $(foreach file,$(PROTO_FILES),--go_opt=M$(subst $(SRC_DIR)/,,$(file))=$(MODULE)/$(PROTO_OUT_DIR))
@@ -17,6 +18,7 @@ all: proto buildAll buildPkg clean
 
 ARCHES := 386 amd64 arm arm64 riscv64 mipsle mips64le
 buildAll: $(ARCHES)
+createAll: buildAll buildPkg
 
 $(ARCHES):
 	CGO_ENABLED=0 GOOS=linux GOARCH=$@ go build -ldflags="-s -w" -o $(BUILD_OUT_DIR)/$@/staploy-cli staploy-cli

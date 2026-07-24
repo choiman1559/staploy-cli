@@ -1,6 +1,7 @@
 package build
 
 import (
+	"os"
 	"os/exec"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
@@ -21,21 +22,21 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 		logger.EnableTree()
 		postRun := make(map[string]string)
 
-		outPutDir, err := parseExecArgs(build.OutputDir)
+		outPutDir, err := a.parseExecArgs(build, build.OutputDir)
 		if err != nil {
 			logger.DisableTree(true)
 			logger.Error("Error parsing output_dir, Abort build => %v", err)
 			return nil
 		}
 
-		version, err := parseExecArgs(build.Version)
+		version, err := a.parseExecArgs(build, build.Version)
 		if err != nil {
 			logger.DisableTree(true)
 			logger.Error("Error parsing version, Abort build => %v", err)
 			return nil
 		}
 
-		libVersion, err := parseExecArgs(build.LibVersion)
+		libVersion, err := a.parseExecArgs(build, build.LibVersion)
 		if err != nil {
 			logger.DisableTree(true)
 			logger.Error("Error parsing lib_version, Abort build => %v", err)
@@ -43,7 +44,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 		}
 
 		if build.PreBuild != "" {
-			out, err := execShell(build.PreBuild)
+			out, err := a.execShell(build, build.PreBuild)
 			if err != nil {
 				logger.DisableTree(true)
 				logger.Error("Error executing global pre-build command, Abort build => %v", err)
@@ -73,7 +74,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 		}
 
 		for _, arch := range arches {
-			processArch(arch, postRun)
+			a.processArch(build, arch, postRun)
 		}
 
 		t := &PkgCmdTask{}
@@ -84,7 +85,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 			logger.Error("Error processing build \"%s\": %v", build.AppName, err)
 		} else {
 			for arch, postCmd := range postRun {
-				out, err := execShell(postCmd)
+				out, err := a.execShell(build, postCmd)
 				if err != nil {
 					logger.Error("Error executing %s post-build command => %s: %v", arch, postCmd, err)
 				}
@@ -92,7 +93,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 			}
 
 			if build.PostBuild != "" {
-				out, err := execShell(build.PostBuild)
+				out, err := a.execShell(build, build.PostBuild)
 				if err != nil {
 					logger.Error("Error executing global post-build command => %s: %v", build.PostBuild, err)
 				}
@@ -106,19 +107,19 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 	return nil
 }
 
-func processArch(arch ArchTarget, postRun map[string]string) {
+func (a *StaFileTask) processArch(build *Build, arch ArchTarget, postRun map[string]string) {
 	if arch.target == nil {
 		return
 	}
 
-	parsedPath, err := parseExecArgs(arch.target.Path)
+	parsedPath, err := a.parseExecArgs(build, arch.target.Path)
 	if err != nil {
 		logger.Error("Error parsing path \"%s\": %v", arch.target.Path, err)
 		return
 	}
 
 	if arch.target.PreBuild != "" {
-		out, err := execShell(arch.target.PreBuild)
+		out, err := a.execShell(build, arch.target.PreBuild)
 		if err != nil {
 			logger.Error("Error executing %s pre-build command, skipping => %v", arch.name, err)
 			return
@@ -132,14 +133,19 @@ func processArch(arch ArchTarget, postRun map[string]string) {
 	}
 }
 
-func execShell(command string) (string, error) {
-	out, err := exec.Command("bash", "-c", command).Output()
+func (a *StaFileTask) execShell(build *Build, command string) (string, error) {
+	cmd := exec.Command("bash", "-c", command)
+	if build.Environments != nil && len(*build.Environments) > 0 {
+		cmd.Env = append(os.Environ(), *build.Environments...)
+	}
+
+	out, err := cmd.Output()
 	return strings.TrimSuffix(string(out), "\n"), err
 }
 
-func parseExecArgs(args string) (string, error) {
+func (a *StaFileTask) parseExecArgs(build *Build, args string) (string, error) {
 	if args == "" || !strings.HasPrefix(args, consts.BUILD_FILE_SHELL_PREFIX) {
 		return args, nil
 	}
-	return execShell(strings.TrimPrefix(args, consts.BUILD_FILE_SHELL_PREFIX))
+	return a.execShell(build, strings.TrimPrefix(args, consts.BUILD_FILE_SHELL_PREFIX))
 }

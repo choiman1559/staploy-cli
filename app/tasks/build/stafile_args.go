@@ -84,10 +84,11 @@ type PullTask struct {
 }
 
 type Build struct {
-	AppName     string   `hcl:"name,label"`
-	OutputDir   string   `hcl:"output_dir"`
-	Version     string   `hcl:"version"`
-	Executables []string `hcl:"executable"`
+	AppName      string    `hcl:"name,label"`
+	OutputDir    string    `hcl:"output_dir"`
+	Version      string    `hcl:"version"`
+	Executables  []string  `hcl:"executable"`
+	Environments *[]string `hcl:"envs"`
 
 	LibVersion string `hcl:"lib_version,optional"`
 	PreBuild   string `hcl:"pre_build,optional"`

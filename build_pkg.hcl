@@ -2,7 +2,7 @@ build "staploy-cli" {
   output_dir  = "out"
   version     = "1.0.0"
   executable = ["staploy-cli"]
-  lib_version = "shell:/home/$USER/sdk/go1.26.2/bin/go version | tr -d '\\n'"
+  lib_version = "shell:go version"
 
   i386 { path = "out/386" }
   x86_64 { path = "out/amd64" }
