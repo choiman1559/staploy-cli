@@ -194,6 +194,8 @@ func (a *CmdTask[T]) PostRequestOnly(requestPacket *proto.RequestPacket) error {
 			return
 		}
 	}(resp.Body)
+
+	_, _ = io.Copy(io.Discard, resp.Body)
 	return nil
 }
 
