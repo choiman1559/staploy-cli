@@ -59,9 +59,10 @@ type DisconnCmd struct {
 // set 			(TYPE_DEPLOY_SET_VERSION)
 
 type PushCmd struct {
-	WorkerId []string `arg:"-w,--worker-id,required" help:"worker id to install new package"`
-	AppName  string   `arg:"-n,--app-name, required" help:"name of app to push"`
-	Version  string   `arg:"-e,--version,required" help:"version of app to push"`
+	WorkerId  []string `arg:"-w,--worker-id,required" help:"worker id to install new package"`
+	AppName   string   `arg:"-n,--app-name, required" help:"name of app to push"`
+	Version   string   `arg:"-e,--version,required" help:"version of app to push"`
+	MaxThread uint8    `arg:"-t,--max-thread" help:"maximum number of threads to push, set value 0 as sequential push" default:"16"`
 }
 
 type RemoveCmd struct {

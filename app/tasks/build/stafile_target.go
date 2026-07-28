@@ -24,7 +24,8 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 
 						pt := &deploy.PushCmdTask{}
 						pt.Init(*defArgs, cmds.PushCmd{
-							WorkerId: worker, AppName: target.Deploy.AppName, Version: target.Deploy.Version,
+							WorkerId: worker, AppName: target.Deploy.AppName,
+							Version: target.Deploy.Version, MaxThread: 0,
 						}, proto.TaskGroup_TASK_DEPLOY)
 
 						err := pt.MainCmd()
@@ -56,7 +57,8 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 					for _, workerId := range target.WorkerIds {
 						t := &deploy.PushCmdTask{}
 						t.Init(*defArgs, cmds.PushCmd{
-							WorkerId: []string{workerId}, AppName: target.Push.AppName, Version: target.Push.Version,
+							WorkerId: []string{workerId}, AppName: target.Push.AppName,
+							Version: target.Push.Version, MaxThread: 0,
 						}, proto.TaskGroup_TASK_DEPLOY)
 
 						err := t.MainCmd()
