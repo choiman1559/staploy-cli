@@ -21,7 +21,10 @@ func (task *PushCmdTask) MainCmd() error {
 			AppName: task.CmdArgs.AppName,
 		},
 	}
-	task.AppInfo.AppVersion = append(task.AppInfo.GetAppVersion(), &proto.Version{VersionName: task.CmdArgs.Version})
+
+	if task.CmdArgs.Version != "" {
+		task.AppInfo.AppVersion = append(task.AppInfo.GetAppVersion(), &proto.Version{VersionName: task.CmdArgs.Version})
+	}
 
 	workers, err := task.ParseWorkers(false, task.CmdArgs.WorkerId...)
 	if err != nil {
@@ -77,9 +80,14 @@ func (task *PushCmdTask) requestPush(workerId string) error {
 	}
 
 	if response.GetStatus() == consts.StatusOK && response.GetWorkerResponse()[0].GetTaskResult().GetResultSuccessful() {
-		logger.Info("Pushed package: \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(task.CmdArgs.Version), workerId)
+		logger.Info("Pushed package: \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(response.GetExtraData()), workerId)
 	} else {
-		logger.Error("Failed to push \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(task.CmdArgs.Version), workerId)
+		if task.CmdArgs.Version != "" {
+			logger.Error("Failed to push \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(task.CmdArgs.Version), workerId)
+		} else {
+			logger.Error("Failed to push \"%s\" at worker %s", task.CmdArgs.AppName, workerId)
+		}
+
 		if len(response.GetWorkerResponse()) > 0 {
 			logger.Error("Error cause is: %s", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
 		}
