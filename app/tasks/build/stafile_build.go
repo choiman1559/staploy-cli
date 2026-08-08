@@ -1,6 +1,7 @@
 package build
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"staploy-cli/app/cmds"
@@ -41,6 +42,31 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 			logger.DisableTree(true)
 			logger.Error("Error parsing lib_version, Abort build => %v", err)
 			return nil
+		}
+
+		if build.Environments != nil {
+			var newEnv []string
+			oldEnv := *build.Environments
+			build.Environments = nil
+
+			for _, env := range oldEnv {
+				value := strings.Split(env, "=")
+				if len(value) != 2 {
+					logger.Warn("Invalid environment format, ignoring => %s", value[0])
+				} else {
+					result, err := a.execShell(build, fmt.Sprintf("echo \"%s\"", value[1]))
+					if err == nil {
+						newEnv = append(newEnv, fmt.Sprintf("%s=%s", value[0], result))
+					} else {
+						logger.Warn("Invalid environment while parsing, ignoring => %s; %v", value[0], err)
+					}
+				}
+			}
+
+			if a.DefaultArgs.Verbose {
+				logger.Tip("[DEBUG] Detected environments: %+v", newEnv)
+			}
+			build.Environments = &newEnv
 		}
 
 		if build.PreBuild != "" {
