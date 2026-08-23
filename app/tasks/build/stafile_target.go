@@ -13,6 +13,56 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 		logger.Process("Processing target \"%s\"", target.TargetName)
 		logger.EnableTree()
 
+		if target.Where != nil {
+			var filteredWorkers []string
+			parsedWorkers, err := a.ParseWorkers(false, target.WorkerIds...)
+
+			if err != nil {
+				logger.DisableTree(true)
+				logger.Error("Failed to parse worker, cause: %s", err.Error())
+				continue
+			}
+
+			for _, worker := range parsedWorkers {
+				packet := a.CreateDefPacket(worker)
+				packet.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE
+				packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_REQ_WORKER_INFO}
+
+				response, err := a.PostRequest(packet)
+				if err != nil {
+					logger.Warn("Failed to post request for worker \"%s\", cause: %s", worker, err.Error())
+					continue
+				}
+
+				if response.WorkerResponse != nil && len(response.WorkerResponse) == 1 {
+					workerInfo := response.GetWorkerResponse()[0].GetWorkerInfo()
+					passedFilter, err := a.evalFilter(workerInfo, target.Where)
+					if err != nil {
+						logger.Warn("Failed to eval filter for worker \"%s\", cause: %s", worker, err.Error())
+						continue
+					}
+
+					if passedFilter {
+						if a.DefaultArgs.Verbose {
+							logger.Tip("[DEBUG] worker \"%s\" passed filter", worker)
+						}
+						filteredWorkers = append(filteredWorkers, workerInfo.WorkerId)
+					}
+				} else {
+					logger.Warn("Failed to get worker (\"%s\") information for where filter", worker)
+					continue
+				}
+			}
+
+			if len(filteredWorkers) > 0 {
+				target.WorkerIds = filteredWorkers
+			} else {
+				logger.DisableTree(true)
+				logger.Warn("No workers selected for target \"%s\", skipping.", target.TargetName)
+				continue
+			}
+		}
+
 		if target.Deploy != nil {
 			a.EvalTask(defArgs, &BashCommandTask{
 				workerId:   target.WorkerIds,

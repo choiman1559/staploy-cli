@@ -44,7 +44,7 @@ func (a *PkgCmdTask) MainCmd() error {
 			AppName: a.CmdArgs.AppName,
 		},
 		CurrentVersion: &proto.Version{
-			VersionName: a.CmdArgs.VersionName,
+			VersionName: strings.TrimLeft(a.CmdArgs.VersionName, "vV"),
 			LibVersion:  &a.CmdArgs.LibVersion,
 		},
 	}

@@ -16,12 +16,24 @@ type Configs struct {
 type Target struct {
 	TargetName string   `hcl:"name,label"`
 	WorkerIds  []string `hcl:"workers"`
+	Where      *Where   `hcl:"where,block"`
 
 	Deploy  *DeployTask  `hcl:"deploy,block"`
 	Push    *PushTask    `hcl:"push_only,block"`
 	Set     *SetTask     `hcl:"set_active,block"`
 	Remove  *RemoveTask  `hcl:"remove,block"`
 	Disconn *DisconnTask `hcl:"disconnect,block"`
+}
+
+type Where struct {
+	Name       string   `hcl:"name,optional"`
+	Arch       []string `hcl:"arch,optional"`
+	Cpu        string   `hcl:"cpu,optional"`
+	Memory     string   `hcl:"memory,optional"`
+	WorkingDir string   `hcl:"workdir,optional"`
+
+	ShellEnabled       *bool `hcl:"shell_enable,optional"`
+	SkipIntegrityCheck *bool `hcl:"integrity_skip,optional"`
 }
 
 type DeployTask struct {

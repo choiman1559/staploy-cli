@@ -132,6 +132,7 @@ func HandleProcessInvoke() {
 
 	if taskInterface == nil {
 		logger.Error("no command arg specified. abort")
+		return
 	}
 
 	err := taskInterface.MainCmd()

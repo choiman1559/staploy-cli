@@ -44,22 +44,23 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 			return nil
 		}
 
-		if build.Environments != nil {
+		if build.Environments != nil && len(*build.Environments) > 0 {
 			var newEnv []string
 			oldEnv := *build.Environments
 			build.Environments = nil
 
 			for _, env := range oldEnv {
-				value := strings.Split(env, "=")
-				if len(value) != 2 {
+				value := strings.SplitN(env, "=", 2)
+				if len(value) != 2 || value[1] == "" {
 					logger.Warn("Invalid environment format, ignoring => %s", value[0])
+					continue
+				}
+
+				result, err := a.execShell(build, fmt.Sprintf("echo \"%s\"", value[1]))
+				if err == nil {
+					newEnv = append(newEnv, fmt.Sprintf("%s=%s", value[0], result))
 				} else {
-					result, err := a.execShell(build, fmt.Sprintf("echo \"%s\"", value[1]))
-					if err == nil {
-						newEnv = append(newEnv, fmt.Sprintf("%s=%s", value[0], result))
-					} else {
-						logger.Warn("Invalid environment while parsing, ignoring => %s; %v", value[0], err)
-					}
+					logger.Warn("Invalid environment while parsing, ignoring => %s; %v", value[0], err)
 				}
 			}
 
