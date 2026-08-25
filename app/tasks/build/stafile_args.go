@@ -2,6 +2,7 @@ package build
 
 type StaployFile struct {
 	Config  *Configs  `hcl:"configure,block"`
+	Alias   *Alias    `hcl:"alias,block"`
 	Targets []*Target `hcl:"target,block"`
 	Manages []*Manage `hcl:"manage,block"`
 	Builds  []*Build  `hcl:"build,block"`
@@ -11,6 +12,23 @@ type Configs struct {
 	Address   string `hcl:"address"`
 	Port      int    `hcl:"port"`
 	UseIdOnly bool   `hcl:"enforce_uuid,optional"`
+}
+
+type Alias struct {
+	Worker []*WorkerAlias `hcl:"worker,block"`
+	App    []*AppAlias    `hcl:"app,block"`
+}
+
+type WorkerAlias struct {
+	Alias     string   `hcl:"alias,label"`
+	WorkerIds []string `hcl:"workers"`
+	Where     *Where   `hcl:"where,block"`
+}
+
+type AppAlias struct {
+	Alias   string `hcl:"alias,label"`
+	AppName string `hcl:"name"`
+	Version string `hcl:"version,optional"`
 }
 
 type Target struct {
@@ -38,28 +56,28 @@ type Where struct {
 
 type DeployTask struct {
 	AppName    string `hcl:"name,label"`
-	Version    string `hcl:"version"`
+	Version    string `hcl:"version,optional"`
 	PreDeploy  string `hcl:"pre_deploy,optional"`
 	PostDeploy string `hcl:"post_deploy,optional"`
 }
 
 type PushTask struct {
 	AppName    string `hcl:"name,label"`
-	Version    string `hcl:"version"`
+	Version    string `hcl:"version,optional"`
 	PreDeploy  string `hcl:"pre_deploy,optional"`
 	PostDeploy string `hcl:"post_deploy,optional"`
 }
 
 type SetTask struct {
 	AppName    string `hcl:"name,label"`
-	Version    string `hcl:"version"`
+	Version    string `hcl:"version,optional"`
 	PreDeploy  string `hcl:"pre_deploy,optional"`
 	PostDeploy string `hcl:"post_deploy,optional"`
 }
 
 type RemoveTask struct {
 	AppName    string `hcl:"name,label"`
-	Version    string `hcl:"version"`
+	Version    string `hcl:"version,optional"`
 	AutoRemove bool   `hcl:"autoremove,optional"`
 	PreDeploy  string `hcl:"pre_deploy,optional"`
 	PostDeploy string `hcl:"post_deploy,optional"`
@@ -82,7 +100,7 @@ type CreateTask struct {
 }
 
 type UploadTask struct {
-	PackageFile string `hcl:"path"`
+	PackageFile string `hcl:"path,optional"`
 }
 
 type DeleteTask struct {
@@ -98,7 +116,7 @@ type PullTask struct {
 type Build struct {
 	AppName      string    `hcl:"name,label"`
 	OutputDir    string    `hcl:"output_dir"`
-	Version      string    `hcl:"version"`
+	Version      string    `hcl:"version,optional"`
 	Executables  []string  `hcl:"executable"`
 	Environments *[]string `hcl:"envs"`
 

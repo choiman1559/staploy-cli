@@ -19,6 +19,10 @@ func (task *RemoveCmdTask) MainCmd() error {
 		return err
 	}
 
+	if task.CmdArgs.Version != "" {
+		task.CmdArgs.Version = logger.TrimVersion(task.CmdArgs.Version)
+	}
+
 	task.CmdArgs.WorkerId = workers
 	if task.CmdArgs.AutoRemove {
 		return task.RemoveAuto()

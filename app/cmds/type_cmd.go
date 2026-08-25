@@ -84,8 +84,12 @@ func (a *CmdTask[T]) ParseWorkers(disableGroup bool, workers ...string) ([]strin
 
 findCache:
 	for _, worker := range workers {
-		if disableGroup && strings.HasPrefix(worker, "group:") {
-			return nil, fmt.Errorf("group is not supported on this type of task: %s", worker)
+		if strings.HasPrefix(worker, consts.STAFILE_ALIAS_PREFIX) {
+			return nil, fmt.Errorf("alias expression not allowed in this context: %s", worker)
+		}
+
+		if disableGroup && strings.HasPrefix(worker, consts.STAFILE_GROUP_PREFIX) {
+			return nil, fmt.Errorf("group is not supported on this type of task: \"%s\"", worker)
 		}
 
 		for id, name := range WorkersIdCache {

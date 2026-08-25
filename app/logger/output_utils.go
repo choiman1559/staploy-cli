@@ -72,3 +72,18 @@ func FormatWithCommas(num int64) string {
 
 	return string(result)
 }
+
+func TrimVersion(version string) string {
+	if strings.HasPrefix(version, "v") || strings.HasPrefix(version, "V") {
+		return version[1:]
+	}
+	return version
+}
+
+func TrimVersions(versions []string) []string {
+	trimmed := make([]string, 0, len(versions))
+	for _, version := range versions {
+		trimmed = append(trimmed, TrimVersion(version))
+	}
+	return trimmed
+}

@@ -22,6 +22,7 @@ func (task *SetCmdTask) MainCmd() error {
 	versionSpecified := false
 	if task.CmdArgs.Version != "" {
 		versionSpecified = true
+		task.CmdArgs.Version = logger.TrimVersion(task.CmdArgs.Version)
 		appInfo.AppVersion = append(appInfo.GetAppVersion(), &proto.Version{VersionName: task.CmdArgs.Version})
 	}
 

@@ -23,6 +23,7 @@ func (task *PushCmdTask) MainCmd() error {
 	}
 
 	if task.CmdArgs.Version != "" {
+		task.CmdArgs.Version = logger.TrimVersion(task.CmdArgs.Version)
 		task.AppInfo.AppVersion = append(task.AppInfo.GetAppVersion(), &proto.Version{VersionName: task.CmdArgs.Version})
 	}
 

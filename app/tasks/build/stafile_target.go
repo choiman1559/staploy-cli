@@ -13,6 +13,14 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 		logger.Process("Processing target \"%s\"", target.TargetName)
 		logger.EnableTree()
 
+		resolvedWorkers, err := a.ParseWorkerAlias(false, target.WorkerIds...)
+		if err != nil {
+			logger.DisableTree(true)
+			logger.Error("Failed to parse workers, cause: %s", err.Error())
+			continue
+		}
+		target.WorkerIds = resolvedWorkers
+
 		if target.Where != nil {
 			var filteredWorkers []string
 			parsedWorkers, err := a.ParseWorkers(false, target.WorkerIds...)
@@ -24,18 +32,8 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 			}
 
 			for _, worker := range parsedWorkers {
-				packet := a.CreateDefPacket(worker)
-				packet.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE
-				packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_REQ_WORKER_INFO}
-
-				response, err := a.PostRequest(packet)
-				if err != nil {
-					logger.Warn("Failed to post request for worker \"%s\", cause: %s", worker, err.Error())
-					continue
-				}
-
-				if response.WorkerResponse != nil && len(response.WorkerResponse) == 1 {
-					workerInfo := response.GetWorkerResponse()[0].GetWorkerInfo()
+				workerInfo, err := a.askWorkerInfoData(worker)
+				if err == nil {
 					passedFilter, err := a.evalFilter(workerInfo, target.Where)
 					if err != nil {
 						logger.Warn("Failed to eval filter for worker \"%s\", cause: %s", worker, err.Error())
@@ -49,7 +47,7 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 						filteredWorkers = append(filteredWorkers, workerInfo.WorkerId)
 					}
 				} else {
-					logger.Warn("Failed to get worker (\"%s\") information for where filter", worker)
+					logger.Warn(err.Error())
 					continue
 				}
 			}
@@ -69,6 +67,17 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 				preDeploy:  target.Deploy.PreDeploy,
 				postDeploy: target.Deploy.PostDeploy,
 				deployTask: func() {
+					err := a.resolveAppAlias(&target.Deploy.AppName, &target.Deploy.Version)
+					if err != nil {
+						logger.Error("Cannot resolve app alias for deploy: %q", target.Deploy.AppName)
+						return
+					}
+
+					if target.Deploy.Version == "" {
+						logger.Error("Version not specified, Abort Deploy")
+						return
+					}
+
 					for _, workerId := range target.WorkerIds {
 						worker := []string{workerId}
 
@@ -104,6 +113,17 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 				preDeploy:  target.Push.PreDeploy,
 				postDeploy: target.Push.PostDeploy,
 				deployTask: func() {
+					err := a.resolveAppAlias(&target.Push.AppName, &target.Push.Version)
+					if err != nil {
+						logger.Error("Cannot resolve app alias for push: %q", target.Push.AppName)
+						return
+					}
+
+					if target.Push.Version == "" {
+						logger.Error("Version not specified, Abort Push")
+						return
+					}
+
 					for _, workerId := range target.WorkerIds {
 						t := &deploy.PushCmdTask{}
 						t.Init(*defArgs, cmds.PushCmd{
@@ -126,6 +146,12 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 				preDeploy:  target.Set.PreDeploy,
 				postDeploy: target.Set.PostDeploy,
 				deployTask: func() {
+					err := a.resolveAppAlias(&target.Set.AppName, &target.Set.Version)
+					if err != nil {
+						logger.Error("Cannot resolve app alias for set: %q", target.Set.AppName)
+						return
+					}
+
 					for _, workerId := range target.WorkerIds {
 						t := &deploy.SetCmdTask{}
 						t.Init(*defArgs, cmds.SetCmd{
@@ -147,6 +173,17 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 				preDeploy:  target.Remove.PreDeploy,
 				postDeploy: target.Remove.PostDeploy,
 				deployTask: func() {
+					err := a.resolveAppAlias(&target.Remove.AppName, &target.Remove.Version)
+					if err != nil {
+						logger.Error("Cannot resolve app alias for remove: %q", target.Remove.AppName)
+						return
+					}
+
+					if target.Remove.Version == "" {
+						logger.Error("Version not specified, Abort Remove")
+						return
+					}
+
 					for _, workerId := range target.WorkerIds {
 						t := &deploy.RemoveCmdTask{}
 						t.Init(*defArgs, cmds.RemoveCmd{

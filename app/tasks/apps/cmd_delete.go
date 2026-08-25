@@ -20,6 +20,7 @@ func (t *DeleteCmdTask) MainCmd() error {
 
 	requestPacket := t.CreateDefPacket()
 	requestPacket.TaskType = &proto.RequestPacket_AppsTaskType{AppsTaskType: proto.TaskAppsTypes_TYPE_APP_DELETE}
+	t.CmdArgs.VersionName = logger.TrimVersions(t.CmdArgs.VersionName)
 
 	versionList := make([]*proto.Version, len(t.CmdArgs.VersionName))
 	for i, v := range t.CmdArgs.VersionName {

@@ -22,6 +22,29 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 		logger.Info("Processing build \"%s\"", build.AppName)
 		logger.EnableTree()
 		postRun := make(map[string]string)
+		var resolvedAliasName string
+
+		if strings.HasPrefix(build.AppName, consts.STAFILE_ALIAS_PREFIX) {
+			aliasName := strings.TrimPrefix(build.AppName, consts.STAFILE_ALIAS_PREFIX)
+			foundAlias, err := a.hitAppAlias(aliasName, nil)
+			if err != nil {
+				logger.DisableTree(true)
+				logger.Error("Cannot find alias for build \"%s\"", build.AppName)
+				return nil
+			}
+
+			resolvedAliasName = aliasName
+			build.AppName = foundAlias.Alias.AppName
+			if foundAlias.Alias.Version != "" {
+				build.Version = foundAlias.Alias.Version
+			}
+		}
+
+		if build.Version == "" {
+			logger.DisableTree(true)
+			logger.Error("Version not specified, Abort build")
+			return nil
+		}
 
 		outPutDir, err := a.parseExecArgs(build, build.OutputDir)
 		if err != nil {
@@ -104,7 +127,11 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 			a.processArch(build, arch, postRun)
 		}
 
-		t := &PkgCmdTask{}
+		t := &PkgCmdTask{
+			StaFileAliasName: resolvedAliasName,
+			StaFileTask:      a,
+		}
+
 		t.Init(a.DefaultArgs, buildCmd, proto.TaskGroup_TASK_MANAGE_APPS)
 		err = t.MainCmd()
 
@@ -171,8 +198,8 @@ func (a *StaFileTask) execShell(build *Build, command string) (string, error) {
 }
 
 func (a *StaFileTask) parseExecArgs(build *Build, args string) (string, error) {
-	if args == "" || !strings.HasPrefix(args, consts.BUILD_FILE_SHELL_PREFIX) {
+	if args == "" || !strings.HasPrefix(args, consts.STAFILE_SHELL_PREFIX) {
 		return args, nil
 	}
-	return a.execShell(build, strings.TrimPrefix(args, consts.BUILD_FILE_SHELL_PREFIX))
+	return a.execShell(build, strings.TrimPrefix(args, consts.STAFILE_SHELL_PREFIX))
 }

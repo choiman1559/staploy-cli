@@ -26,6 +26,7 @@ func (task *RegistryPullTask) MainCmd() error {
 	}
 
 	if task.CmdTask.CmdArgs.Version != "" {
+		task.CmdTask.CmdArgs.Version = logger.TrimVersion(task.CmdTask.CmdArgs.Version)
 		appInfo.AppVersion = []*proto.Version{{VersionName: task.CmdTask.CmdArgs.Version}}
 	}
 

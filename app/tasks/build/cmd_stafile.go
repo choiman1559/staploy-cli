@@ -17,6 +17,10 @@ import (
 type StaFileTask struct {
 	cmds.CmdTaskInterface
 	cmds.CmdTask[cmds.StaFileCmd]
+
+	WorkerInfos         map[string]*proto.WorkerInfo
+	ResolvedWorkerAlias map[string]*WorkerAlias
+	ResolvedAppAlias    map[string]*ResolvedAppAlias
 }
 
 func (a *StaFileTask) MainCmd() error {
@@ -58,16 +62,45 @@ func (a *StaFileTask) MainCmd() error {
 		a.DefaultArgs.Address = staFile.Config.Address
 	}
 
+	a.WorkerInfos = make(map[string]*proto.WorkerInfo)
+	a.ResolvedWorkerAlias = make(map[string]*WorkerAlias)
+	a.ResolvedAppAlias = make(map[string]*ResolvedAppAlias)
+
 	return a.ParseStaFile(&staFile)
 }
 
+func (a *StaFileTask) ParseWorkerAlias(disableGroup bool, workers ...string) ([]string, error) {
+	var aliases, restAction []string
+	for _, worker := range workers {
+		if strings.HasPrefix(worker, consts.STAFILE_ALIAS_PREFIX) {
+			aliasName := strings.TrimPrefix(worker, consts.STAFILE_ALIAS_PREFIX)
+			workerAlias := a.ResolvedWorkerAlias[aliasName]
+
+			if workerAlias != nil {
+				aliases = append(aliases, workerAlias.WorkerIds...)
+			} else {
+				return nil, fmt.Errorf("worker alias %s is not found", aliasName)
+			}
+		} else {
+			restAction = append(restAction, worker)
+		}
+	}
+
+	restResult, err := a.ParseWorkers(disableGroup, restAction...)
+	if err != nil {
+		return nil, err
+	}
+
+	return append(aliases, restResult...), nil
+}
+
 func (a *StaFileTask) FormatWorker(workerIdOrName string) string {
-	realId, err := a.ParseWorkers(true, workerIdOrName)
+	realId, err := a.ParseWorkerAlias(true, workerIdOrName)
 	if err != nil || len(realId) != 1 {
 		return ""
 	}
 
-	if strings.HasPrefix(workerIdOrName, "group:") {
+	if strings.HasPrefix(workerIdOrName, consts.STAFILE_GROUP_PREFIX) {
 		return workerIdOrName
 	}
 	return fmt.Sprintf("%s (%s)", logger.ShortHash(realId[0]), cmds.WorkersIdCache[realId[0]])
@@ -76,7 +109,7 @@ func (a *StaFileTask) FormatWorker(workerIdOrName string) string {
 func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 	logger.Process("Parsing Staployfile... Found %d build, %d manages and %d targets", len(staployFile.Builds), len(staployFile.Manages), len(staployFile.Targets))
 
-	if len(staployFile.Builds) > 0 {
+	if staployFile.Alias == nil && len(staployFile.Builds) > 0 {
 		err := a.processBuild(staployFile.Builds)
 		if err != nil {
 			return err
@@ -126,6 +159,20 @@ func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 		logger.Tip("[DEBUG] Current workers are %+v", response.GetWorkerResponse())
 	}
 
+	if staployFile.Alias != nil {
+		err := a.processAlias(defaultArgs, staployFile.Alias)
+		if err != nil {
+			return err
+		}
+	}
+
+	if staployFile.Alias != nil && len(staployFile.Builds) > 0 {
+		err := a.processBuild(staployFile.Builds)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = a.processManage(defaultArgs, staployFile.Manages)
 	if err != nil {
 		return err
@@ -136,4 +183,27 @@ func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 		return err
 	}
 	return nil
+}
+
+func (a *StaFileTask) askWorkerInfoData(worker string) (*proto.WorkerInfo, error) {
+	if a.WorkerInfos[worker] != nil {
+		return a.WorkerInfos[worker], nil
+	}
+
+	packet := a.CreateDefPacket(worker)
+	packet.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE
+	packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_REQ_WORKER_INFO}
+
+	response, err := a.PostRequest(packet)
+	if err != nil {
+		return nil, fmt.Errorf("failed to post request for worker \"%s\", cause: %s", worker, err.Error())
+	}
+
+	if len(response.GetWorkerResponse()) != 1 {
+		return nil, fmt.Errorf("failed to get worker (\"%s\") information", worker)
+	}
+
+	workerInfo := response.GetWorkerResponse()[0].GetWorkerInfo()
+	a.WorkerInfos[workerInfo.GetWorkerId()] = workerInfo
+	return workerInfo, nil
 }

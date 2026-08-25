@@ -21,6 +21,7 @@ func (a *FetchCmdTask) MainCmd() error {
 		return err
 	}
 
+	a.CmdArgs.VersionName = logger.TrimVersions(a.CmdArgs.VersionName)
 	packet := a.CreateDefPacket(workers...)
 	packet.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_REQ_APP_INFO}
 

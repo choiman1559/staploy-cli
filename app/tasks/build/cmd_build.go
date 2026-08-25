@@ -26,6 +26,9 @@ type PkgCmdTask struct {
 	TargetPathByArch  map[proto.CpuArch]string
 	TargetHashVersion map[proto.CpuArch]*proto.Version
 	ShareExecHash     map[string]bool
+
+	StaFileAliasName string
+	StaFileTask      *StaFileTask
 }
 
 func (a *PkgCmdTask) MainCmd() error {
@@ -39,12 +42,13 @@ func (a *PkgCmdTask) MainCmd() error {
 		return err
 	}
 
+	a.CmdArgs.VersionName = logger.TrimVersion(a.CmdArgs.VersionName)
 	a.baseAppInfo = &proto.InstalledAppInfo{
 		App: &proto.AppInfo{
 			AppName: a.CmdArgs.AppName,
 		},
 		CurrentVersion: &proto.Version{
-			VersionName: strings.TrimLeft(a.CmdArgs.VersionName, "vV"),
+			VersionName: a.CmdArgs.VersionName,
 			LibVersion:  &a.CmdArgs.LibVersion,
 		},
 	}
@@ -58,6 +62,14 @@ func (a *PkgCmdTask) MainCmd() error {
 	logger.Info("Package build finished successfully")
 	logger.Info("Output file created at \"%s\"", a.getArchivePath())
 	logger.Tip("Tip: Upload package file to server using \"staploy-cli upload -f %s\"", a.getArchivePath())
+
+	if a.StaFileAliasName != "" {
+		_, err := a.StaFileTask.hitAppAlias(a.StaFileAliasName, &cmds.BuildCmd{OutputDir: a.getArchivePath()})
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
