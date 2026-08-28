@@ -1,5 +1,6 @@
 package consts
 
+//goland:noinspection GoUnusedConst
 const (
 	APIRouteSchema   = "/api/%s/%s" // INFO: Schema => /api/{version}/{connection_type}
 	ConnTypeAdmin    = "admin"
@@ -14,6 +15,8 @@ const (
 	SkipPrefix    = "[-]"
 	ErrorPrefix   = "[!]"
 	ProcessPrefix = "[*]"
+	TaskPrefix    = "[>]"
+	HookPrefix    = "[~]"
 	WarningPrefix = "[?]"
 )
 
@@ -27,5 +30,7 @@ const STAFILE_ALIAS_PREFIX = "alias:"
 
 const BLOB_REQ_TYPE = "blob_req_type"
 const BLOB_REQ_TYPE_UPLOAD = "type_upload"
+
+//goland:noinspection GoUnusedConst
 const BLOB_REQ_TYPE_DOWNLOAD = "type_download"
 const BLOB_FIELD_PACKAGE = "PACKAGE_UPLOAD"

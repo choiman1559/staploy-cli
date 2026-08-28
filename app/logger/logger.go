@@ -15,13 +15,15 @@ func InitLogger(noColor bool) {
 }
 
 const (
-	colorReset  = "\033[0m"
-	colorBold   = "\033[1m"
-	colorRed    = "\033[31m"
-	colorGreen  = "\033[32m"
-	colorYellow = "\033[33m"
-	colorCyan   = "\033[36m"
-	colorDim    = "\033[2m"
+	colorReset   = "\033[0m"
+	colorBold    = "\033[1m"
+	colorRed     = "\033[31m"
+	colorGreen   = "\033[32m"
+	colorYellow  = "\033[33m"
+	colorBlue    = "\033[34m"
+	colorMagenta = "\033[35m"
+	colorCyan    = "\033[36m"
+	colorDim     = "\033[2m"
 )
 
 func EnableTree() {
@@ -45,6 +47,16 @@ func printTree() string {
 
 func printf(format string, a ...interface{}) {
 	fmt.Println(printTree() + fmt.Sprintf(format, a...))
+}
+
+func Task(format string, a ...interface{}) {
+	if NoColor {
+		printf(consts.TaskPrefix+" "+format, a...)
+		return
+	}
+
+	prefix := colorBlue + consts.TaskPrefix + colorReset + " "
+	printf(prefix+format, a...)
 }
 
 func Process(format string, a ...interface{}) {
@@ -75,6 +87,16 @@ func Tip(format string, a ...interface{}) {
 
 	prefix := colorDim + consts.SkipPrefix + colorReset + " "
 	printf(prefix+colorDim+format+colorReset, a...)
+}
+
+func Hook(format string, a ...interface{}) {
+	if NoColor {
+		printf(consts.HookPrefix+" "+format, a...)
+		return
+	}
+
+	prefix := colorMagenta + consts.HookPrefix + colorReset + " "
+	printf(prefix+format, a...)
 }
 
 func Warn(format string, a ...interface{}) {

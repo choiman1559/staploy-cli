@@ -12,7 +12,7 @@ import (
 
 func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage) error {
 	for _, manage := range manages {
-		logger.Info("Processing manage app_name \"%s\"", manage.AppName)
+		logger.Task("Processing manage app_name \"%s\"", manage.AppName)
 		logger.EnableTree()
 
 		var resolvedAppAlias *ResolvedAppAlias
@@ -101,7 +101,7 @@ func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage
 		}
 
 		logger.DisableTree(true)
-		logger.Tip("Finished manage app_name \"%s\"", manage.AppName)
+		logger.Task("Finished manage app_name \"%s\"", manage.AppName)
 	}
 	return nil
 }

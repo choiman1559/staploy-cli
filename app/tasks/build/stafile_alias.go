@@ -14,10 +14,10 @@ type ResolvedAppAlias struct {
 }
 
 func (a *StaFileTask) processAlias(_ *cmds.DefaultArgs, alias *Alias) error {
-	logger.Process("Parsing Alias... found %d worker alias and %d app alias", len(alias.Worker), len(alias.App))
+	logger.Task("Parsing Alias... found %d worker alias and %d app alias", len(alias.Worker), len(alias.App))
 
 	for _, workerAlias := range alias.Worker {
-		logger.Process("Processing worker alias \"%s\"", workerAlias.Alias)
+		logger.Task("Processing worker alias \"%s\"", workerAlias.Alias)
 		logger.EnableTree()
 		resolvedWorkers := workerAlias.WorkerIds
 
@@ -63,11 +63,11 @@ func (a *StaFileTask) processAlias(_ *cmds.DefaultArgs, alias *Alias) error {
 
 		a.ResolvedWorkerAlias[workerAlias.Alias] = &WorkerAlias{WorkerIds: resolvedWorkers}
 		logger.DisableTree(true)
-		logger.Process("Finished worker alias \"%s\"", workerAlias.Alias)
+		logger.Task("Finished worker alias \"%s\"", workerAlias.Alias)
 	}
 
 	for _, appAlias := range alias.App {
-		logger.Process("Processing app alias \"%s\"", appAlias.Alias)
+		logger.Task("Processing app alias \"%s\"", appAlias.Alias)
 		logger.EnableTree()
 
 		parsedAppName, err := a.parseExecArgs(&Build{}, appAlias.AppName)
@@ -91,7 +91,7 @@ func (a *StaFileTask) processAlias(_ *cmds.DefaultArgs, alias *Alias) error {
 		}}
 
 		logger.DisableTree(true)
-		logger.Process("Finished app alias \"%s\"", appAlias.Alias)
+		logger.Task("Finished app alias \"%s\"", appAlias.Alias)
 	}
 
 	return nil

@@ -19,7 +19,7 @@ type ArchTarget struct {
 
 func (a *StaFileTask) processBuild(builds []*Build) error {
 	for _, build := range builds {
-		logger.Info("Processing build \"%s\"", build.AppName)
+		logger.Task("Processing build \"%s\"", build.AppName)
 		logger.EnableTree()
 		postRun := make(map[string]string)
 		var resolvedAliasName string
@@ -156,7 +156,7 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 		}
 
 		logger.DisableTree(true)
-		logger.Tip("Finished building \"%s\"", build.AppName)
+		logger.Task("Finished building \"%s\"", build.AppName)
 	}
 	return nil
 }

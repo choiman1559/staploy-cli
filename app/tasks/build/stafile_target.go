@@ -10,7 +10,7 @@ import (
 
 func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target) error {
 	for _, target := range targets {
-		logger.Process("Processing target \"%s\"", target.TargetName)
+		logger.Task("Processing target \"%s\"", target.TargetName)
 		logger.EnableTree()
 
 		resolvedWorkers, err := a.ParseWorkerAlias(false, target.WorkerIds...)
@@ -243,7 +243,7 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 		}
 
 		logger.DisableTree(true)
-		logger.Tip("Finished processing target \"%s\"", target.TargetName)
+		logger.Task("Finished processing target \"%s\"", target.TargetName)
 	}
 	return nil
 }
@@ -264,7 +264,7 @@ func (a *StaFileTask) EvalTask(defArgs *cmds.DefaultArgs, task *BashCommandTask)
 				logger.Error("Worker %s Executing pre-deploy: \"%s\" -> Failed for: %v", a.FormatWorker(target), task.preDeploy, err)
 				return
 			}
-			logger.Info("Worker %s Executing pre-deploy: \"%s\" -> Success.", a.FormatWorker(target), task.preDeploy)
+			logger.Hook("Worker %s Executing pre-deploy: \"%s\" -> Success.", a.FormatWorker(target), task.preDeploy)
 		}
 	}
 	task.deployTask()
@@ -275,7 +275,7 @@ func (a *StaFileTask) EvalTask(defArgs *cmds.DefaultArgs, task *BashCommandTask)
 				logger.Error("Worker %s Executing post-deploy: \"%s\" -> Failed for: %v", a.FormatWorker(target), task.postDeploy, err)
 				continue
 			}
-			logger.Info("Worker %s Executing post-deploy: \"%s\" -> Success.", a.FormatWorker(target), task.postDeploy)
+			logger.Hook("Worker %s Executing post-deploy: \"%s\" -> Success.", a.FormatWorker(target), task.postDeploy)
 		}
 	}
 }
