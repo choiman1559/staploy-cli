@@ -39,6 +39,7 @@ type Target struct {
 	Deploy  *DeployTask  `hcl:"deploy,block"`
 	Push    *PushTask    `hcl:"push_only,block"`
 	Set     *SetTask     `hcl:"set_active,block"`
+	Unset   *UnsetTask   `hcl:"unset,block"`
 	Remove  *RemoveTask  `hcl:"remove,block"`
 	Disconn *DisconnTask `hcl:"disconnect,block"`
 }
@@ -71,6 +72,12 @@ type PushTask struct {
 type SetTask struct {
 	AppName    string `hcl:"name,label"`
 	Version    string `hcl:"version,optional"`
+	PreDeploy  string `hcl:"pre_deploy,optional"`
+	PostDeploy string `hcl:"post_deploy,optional"`
+}
+
+type UnsetTask struct {
+	AppName    string `hcl:"name,label"`
 	PreDeploy  string `hcl:"pre_deploy,optional"`
 	PostDeploy string `hcl:"post_deploy,optional"`
 }

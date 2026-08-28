@@ -125,7 +125,7 @@ func (a *StaFileTask) resolveAppAlias(appName *string, version *string) error {
 	}
 
 	*appName = foundAlias.Alias.AppName
-	if foundAlias.Alias.Version != "" {
+	if foundAlias.Alias.Version != "" && version != nil {
 		*version = foundAlias.Alias.Version
 	}
 

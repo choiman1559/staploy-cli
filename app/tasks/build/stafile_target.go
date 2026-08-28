@@ -61,6 +61,65 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 			}
 		}
 
+		if target.Unset != nil {
+			a.EvalTask(defArgs, &BashCommandTask{
+				workerId:   target.WorkerIds,
+				preDeploy:  target.Unset.PreDeploy,
+				postDeploy: target.Unset.PostDeploy,
+				deployTask: func() {
+					err := a.resolveAppAlias(&target.Unset.AppName, nil)
+					if err != nil {
+						logger.Error("Cannot resolve app alias for unset: %q", target.Unset.AppName)
+						return
+					}
+
+					for _, workerId := range target.WorkerIds {
+						t := &deploy.UnsetCmdTask{}
+						t.Init(*defArgs, cmds.UnsetCmd{
+							WorkerId: []string{workerId}, AppName: target.Unset.AppName,
+						}, proto.TaskGroup_TASK_DEPLOY)
+
+						err := t.MainCmd()
+						if err != nil {
+							logger.Warn("Worker %s Executing untriggering: %s -> Failed for: %v", a.FormatWorker(workerId), target.Unset.AppName, err)
+						}
+					}
+				},
+			})
+		}
+
+		if target.Remove != nil {
+			a.EvalTask(defArgs, &BashCommandTask{
+				workerId:   target.WorkerIds,
+				preDeploy:  target.Remove.PreDeploy,
+				postDeploy: target.Remove.PostDeploy,
+				deployTask: func() {
+					err := a.resolveAppAlias(&target.Remove.AppName, &target.Remove.Version)
+					if err != nil {
+						logger.Error("Cannot resolve app alias for remove: %q", target.Remove.AppName)
+						return
+					}
+
+					if target.Remove.Version == "" {
+						logger.Error("Version not specified, Abort Remove")
+						return
+					}
+
+					for _, workerId := range target.WorkerIds {
+						t := &deploy.RemoveCmdTask{}
+						t.Init(*defArgs, cmds.RemoveCmd{
+							WorkerId: []string{workerId}, AppName: target.Remove.AppName, Version: target.Remove.Version, AutoRemove: target.Remove.AutoRemove,
+						}, proto.TaskGroup_TASK_DEPLOY)
+
+						err := t.MainCmd()
+						if err != nil {
+							logger.Warn("Worker %s Executing activating: %s (%s) -> Failed for: %v", a.FormatWorker(workerId), target.Remove.AppName, logger.VersionNamePrefix(target.Remove.Version), err)
+						}
+					}
+				},
+			})
+		}
+
 		if target.Deploy != nil {
 			a.EvalTask(defArgs, &BashCommandTask{
 				workerId:   target.WorkerIds,
@@ -161,38 +220,6 @@ func (a *StaFileTask) processTarget(defArgs *cmds.DefaultArgs, targets []*Target
 						err := t.MainCmd()
 						if err != nil {
 							logger.Warn("Worker %s Executing activating: %s (%s) -> Failed for: %v", a.FormatWorker(workerId), target.Set.AppName, logger.VersionNamePrefix(target.Set.Version), err)
-						}
-					}
-				},
-			})
-		}
-
-		if target.Remove != nil {
-			a.EvalTask(defArgs, &BashCommandTask{
-				workerId:   target.WorkerIds,
-				preDeploy:  target.Remove.PreDeploy,
-				postDeploy: target.Remove.PostDeploy,
-				deployTask: func() {
-					err := a.resolveAppAlias(&target.Remove.AppName, &target.Remove.Version)
-					if err != nil {
-						logger.Error("Cannot resolve app alias for remove: %q", target.Remove.AppName)
-						return
-					}
-
-					if target.Remove.Version == "" {
-						logger.Error("Version not specified, Abort Remove")
-						return
-					}
-
-					for _, workerId := range target.WorkerIds {
-						t := &deploy.RemoveCmdTask{}
-						t.Init(*defArgs, cmds.RemoveCmd{
-							WorkerId: []string{workerId}, AppName: target.Remove.AppName, Version: target.Remove.Version, AutoRemove: target.Remove.AutoRemove,
-						}, proto.TaskGroup_TASK_DEPLOY)
-
-						err := t.MainCmd()
-						if err != nil {
-							logger.Warn("Worker %s Executing activating: %s (%s) -> Failed for: %v", a.FormatWorker(workerId), target.Remove.AppName, logger.VersionNamePrefix(target.Remove.Version), err)
 						}
 					}
 				},

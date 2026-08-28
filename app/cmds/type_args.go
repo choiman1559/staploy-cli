@@ -78,6 +78,11 @@ type SetCmd struct {
 	Version  string   `arg:"-e,--version" help:"version of app to set, disable package if not specified"`
 }
 
+type UnsetCmd struct {
+	WorkerId []string `arg:"-w,--worker-id,required" help:"worker id to unset package"`
+	AppName  string   `arg:"-n,--app-name, required" help:"name of app to unset"`
+}
+
 /// ### TaskGroupTypes
 // group
 // -> create 	(TYPE_GROUP_CREATE)
@@ -276,6 +281,7 @@ var Args struct {
 	Push   *PushCmd   `arg:"subcommand:push" help:"push an package to a remote worker"`
 	Remove *RemoveCmd `arg:"subcommand:remove" help:"remove a package from a remote worker"`
 	Set    *SetCmd    `arg:"subcommand:set" help:"set a version of package to executable path from a remote worker"`
+	Unset  *UnsetCmd  `arg:"subcommand:unset" help:"unset a version of package to executable path from a remote worker"`
 
 	Group    *GroupCmd    `arg:"subcommand:group" help:"manage groups of workers"`
 	Build    *BuildCmd    `arg:"subcommand:build" help:"build a distributable package"`

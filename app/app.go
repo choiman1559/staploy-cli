@@ -111,6 +111,11 @@ func HandleProcessInvoke() {
 			t.Init(defaultArgs, *cmds.Args.Set, proto.TaskGroup_TASK_DEPLOY)
 			return t
 		}},
+		{cmds.Args.Unset != nil, func() cmds.CmdTaskInterface {
+			t := &deploy.UnsetCmdTask{}
+			t.Init(defaultArgs, *cmds.Args.Unset, proto.TaskGroup_TASK_DEPLOY)
+			return t
+		}},
 		{cmds.Args.User != nil, func() cmds.CmdTaskInterface {
 			t := &user.UserCmdTask{}
 			t.Init(defaultArgs, *cmds.Args.User, proto.TaskGroup_TASK_USER)

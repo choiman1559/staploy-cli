@@ -19,7 +19,7 @@ import (
 
 type CmdTypes interface {
 	AppsCmd | BashCmd | BuildCmd | CreateCmd | DeleteCmd | DisconnCmd |
-		FetchCmd | ListCmd | PushCmd | RemoveCmd | SetCmd | UploadCmd | StaFileCmd |
+		FetchCmd | ListCmd | PushCmd | RemoveCmd | SetCmd | UnsetCmd | UploadCmd | StaFileCmd |
 		GroupCmd | GroupAddCmd | GroupCreateCmd | GroupDeleteCmd | GroupListCmd | GroupRemoveCmd |
 		UserCmd | UserCreateCmd | UserLoginCmd | UserRemoveCmd | UserPermissionsCmd | UserListCmd | UserAuditCmd |
 		RegistryCmd | RegistryPushLocalCmd | RegistryRemoveLocalCmd | RegistryListLocalCmd | RegistryPullCmd | RegistryListRepoCmd |
