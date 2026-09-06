@@ -8,6 +8,7 @@ const (
 	ConnTypeWorker   = "worker"
 	StatusError      = "error"
 	StatusOK         = "ok"
+	StatusNone       = "none"
 )
 
 const (

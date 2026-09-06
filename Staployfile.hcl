@@ -12,9 +12,6 @@ manage "testbin" {
   upload {
      path = "./out/testbin_0.1.0.tar"
   }
-#  delete {
-#     versions = ["0.1.0"]
-#  }
 }
 
 target "deploy_test" {

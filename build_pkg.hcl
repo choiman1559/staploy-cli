@@ -1,6 +1,12 @@
-build "staploy-cli" {
+alias {
+  app "staploy-build" {
+    name    = "staploy-cli"
+    version = "1.0.0"
+  }
+}
+
+build "alias:staploy-build" {
   output_dir  = "out"
-  version     = "1.0.0"
   executable = ["staploy-cli"]
   lib_version = "shell:go version"
 
@@ -11,4 +17,26 @@ build "staploy-cli" {
   riscv64 { path = "out/riscv64" }
   mipsel { path = "out/mipsle" }
   mips64el { path = "out/mips64le" }
+}
+
+configure {
+  address      = "192.168.50.194"
+  port         = 18090
+  enforce_uuid = false
+}
+
+manage "alias:staploy-build" {
+  upload {}
+}
+
+target "staploy-deploy" {
+  workers = ["group:all"]
+
+  # First unlink current activated version
+  unset "alias:staploy-build" {
+  }
+
+  # Then push & set desire version
+  deploy "alias:staploy-build" {
+  }
 }

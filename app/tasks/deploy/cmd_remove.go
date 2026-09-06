@@ -67,8 +67,16 @@ func (task *RemoveCmdTask) RemoveAuto() error {
 						logger.Process("Removing unused package %s (%s) at worker %s", v.GetApp().GetAppName(), version.GetVersionName(), workerId)
 					}
 				}
-				removePacket.AppInfoFetch = append(removePacket.AppInfoFetch, appInfo)
+
+				if len(appInfo.GetAppVersion()) > 0 {
+					removePacket.AppInfoFetch = append(removePacket.AppInfoFetch, appInfo)
+				}
 			}
+		}
+
+		if len(removePacket.AppInfoFetch) == 0 {
+			logger.Tip("No unused package available on worker %s", workerId)
+			continue
 		}
 
 		removeResponse, err := task.PostRequest(removePacket)
@@ -114,12 +122,18 @@ func (task *RemoveCmdTask) RemoveSpecified() error {
 			return err
 		}
 
-		if response.GetStatus() == consts.StatusOK {
-			if versionSpecified {
-				logger.Tip("Removed package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
+		if response.GetStatus() == consts.StatusOK && response.GetErrorCause() == consts.StatusNone {
+			if len(response.GetWorkerResponse()) != 0 && response.GetWorkerResponse()[0].GetTaskResult().GetResultSuccessful() {
+				if versionSpecified {
+					logger.Tip("Removed package %s (%s) at worker %s", task.CmdArgs.AppName, task.CmdArgs.Version, workerId)
+				} else {
+					logger.Tip("Removed all package %s at worker %s", task.CmdArgs.AppName, workerId)
+				}
 			} else {
-				logger.Tip("Removed all package %s at worker %s", task.CmdArgs.AppName, workerId)
+				logger.Error("Failed to remove %s at worker %s, cause: %s", task.CmdArgs.AppName, workerId, response.GetWorkerResponse()[0].GetTaskResult())
 			}
+		} else if response.GetErrorCause() != consts.StatusNone {
+			logger.Error("Failed to remove %s at worker %s, cause: %s", task.CmdArgs.AppName, workerId, response)
 		} else {
 			logger.Error("Failed to remove %s at worker %s", task.CmdArgs.AppName, workerId)
 		}
