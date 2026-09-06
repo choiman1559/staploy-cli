@@ -20,8 +20,8 @@ build "alias:staploy-build" {
 }
 
 configure {
-  address      = "192.168.50.194"
-  port         = 18090
+  address      = "shell:echo $STAPLOY_HOST_ADDR"
+  port         = "shell:echo $STAPLOY_HOST_PORT"
   enforce_uuid = false
 }
 

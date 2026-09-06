@@ -2,11 +2,14 @@ package build
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"regexp"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -21,6 +24,7 @@ type StaFileTask struct {
 	WorkerInfos         map[string]*proto.WorkerInfo
 	ResolvedWorkerAlias map[string]*WorkerAlias
 	ResolvedAppAlias    map[string]*ResolvedAppAlias
+	ServerPort          int
 }
 
 func (a *StaFileTask) MainCmd() error {
@@ -57,8 +61,40 @@ func (a *StaFileTask) MainCmd() error {
 	}
 
 	if staFile.Config != nil {
+		serverAddress, err := a.parseExecArgs(&Build{}, staFile.Config.Address)
+		if err != nil {
+			return fmt.Errorf("parse server address error: %v", err)
+		}
+
+		IsValidAddress := func(address string) bool {
+			if net.ParseIP(address) != nil {
+				return true
+			}
+
+			var hostnameRegex = regexp.MustCompile(`^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$`)
+			return hostnameRegex.MatchString(address)
+		}
+
+		if !IsValidAddress(serverAddress) {
+			return fmt.Errorf("invalid server address: %s", serverAddress)
+		}
+
+		serverPortStr, err := a.parseExecArgs(&Build{}, staFile.Config.Port)
+		if err != nil {
+			return fmt.Errorf("parse server port error: %v", err)
+		}
+
+		serverPort, err := strconv.Atoi(serverPortStr)
+		if err != nil {
+			return fmt.Errorf("cannot convert server port value into integer error: %v", err)
+		}
+
+		staFile.Config.Address = serverAddress
+		staFile.Config.Port = serverPortStr
+
+		a.ServerPort = serverPort
 		a.DefaultArgs.UseWorkerIdOnly = staFile.Config.UseIdOnly
-		a.DefaultArgs.Port = staFile.Config.Port
+		a.DefaultArgs.Port = a.ServerPort
 		a.DefaultArgs.Address = staFile.Config.Address
 	}
 
@@ -124,7 +160,7 @@ func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 
 	defaultArgs := &cmds.DefaultArgs{
 		Address:         staployFile.Config.Address,
-		Port:            staployFile.Config.Port,
+		Port:            a.ServerPort,
 		UseWorkerIdOnly: staployFile.Config.UseIdOnly,
 		Verbose:         a.DefaultArgs.Verbose,
 	}
@@ -137,7 +173,7 @@ func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 		return fmt.Errorf("port is required, Abort")
 	}
 
-	logger.Process("Syncing with Server (%s:%d)...", defaultArgs.Address, defaultArgs.Port)
+	logger.Process("Syncing with Server... (%s:%d)", defaultArgs.Address, defaultArgs.Port)
 	workerListPacket := a.CreateDefPacket()
 	workerListPacket.TaskGroup = proto.TaskGroup_TASK_MANAGE_NODE
 	workerListPacket.TaskType = &proto.RequestPacket_NodeTaskType{NodeTaskType: proto.TaskNodeTypes_TYPE_NODE_CONNECTED}

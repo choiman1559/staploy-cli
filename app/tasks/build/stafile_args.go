@@ -10,7 +10,7 @@ type StaployFile struct {
 
 type Configs struct {
 	Address   string `hcl:"address"`
-	Port      int    `hcl:"port"`
+	Port      string `hcl:"port"`
 	UseIdOnly bool   `hcl:"enforce_uuid,optional"`
 }
 
