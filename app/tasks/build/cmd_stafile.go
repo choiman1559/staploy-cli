@@ -75,12 +75,12 @@ func (a *StaFileTask) MainCmd() error {
 			return hostnameRegex.MatchString(address)
 		}
 
-		if !IsValidAddress(serverAddress) {
+		if serverAddress == "" || !IsValidAddress(serverAddress) {
 			return fmt.Errorf("invalid server address: %s", serverAddress)
 		}
 
 		serverPortStr, err := a.parseExecArgs(&Build{}, staFile.Config.Port)
-		if err != nil {
+		if serverPortStr == "" || err != nil {
 			return fmt.Errorf("parse server port error: %v", err)
 		}
 

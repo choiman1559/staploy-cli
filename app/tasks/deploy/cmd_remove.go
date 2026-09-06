@@ -130,10 +130,10 @@ func (task *RemoveCmdTask) RemoveSpecified() error {
 					logger.Tip("Removed all package %s at worker %s", task.CmdArgs.AppName, workerId)
 				}
 			} else {
-				logger.Error("Failed to remove %s at worker %s, cause: %s", task.CmdArgs.AppName, workerId, response.GetWorkerResponse()[0].GetTaskResult())
+				logger.Error("Failed to remove %s at worker %s, cause: %s", task.CmdArgs.AppName, workerId, response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
 			}
 		} else if response.GetErrorCause() != consts.StatusNone {
-			logger.Error("Failed to remove %s at worker %s, cause: %s", task.CmdArgs.AppName, workerId, response)
+			logger.Error("Failed to remove %s at worker %s, cause: %s", task.CmdArgs.AppName, workerId, response.GetErrorCause())
 		} else {
 			logger.Error("Failed to remove %s at worker %s", task.CmdArgs.AppName, workerId)
 		}

@@ -49,7 +49,7 @@ func (task *SetCmdTask) MainCmd() error {
 					logger.Tip("Untriggered package %s at worker %s", task.CmdArgs.AppName, workerId)
 				}
 			} else {
-				logger.Error("error: %v", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
+				logger.Error("failed to setting trigger at worker %s, cause: %v", workerId, response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
 			}
 		} else {
 			logger.Error("failed to setting trigger for %s at worker %s", task.CmdArgs.AppName, workerId)

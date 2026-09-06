@@ -38,7 +38,7 @@ func (task *UnsetCmdTask) MainCmd() error {
 			if response.GetWorkerResponse()[0].GetTaskResult().GetResultSuccessful() {
 				logger.Tip("Untriggered package %s at worker %s", task.CmdArgs.AppName, workerId)
 			} else {
-				logger.Error("error: %v", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
+				logger.Error("failed to untrigger at worker %s, cause: %v", workerId, response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
 			}
 		} else {
 			logger.Error("failed to unsetting trigger for %s at worker %s", task.CmdArgs.AppName, workerId)
