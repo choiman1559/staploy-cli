@@ -7,6 +7,7 @@ import (
 	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
 	"staploy-cli/app/proto"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -51,80 +52,108 @@ func (task *UserAuditTask) MainCmd() error {
 }
 
 func resolvePacketDetails(audit *proto.AuditLogData) string {
-	if audit.Response != nil && audit.Response.MessageIs((*proto.ResponsePacket)(nil)) {
-		msg, err := anypb.UnmarshalNew(audit.Response, auditUnmarshalOpts)
-		if err == nil {
-			res := msg.(*proto.ResponsePacket)
-			if res.GetStatus() == "error" {
-				return res.GetErrorCause()
-			}
-		}
-	}
+	var request *proto.RequestPacket
+	var response *proto.ResponsePacket
 
 	if audit.Request != nil && audit.Request.MessageIs((*proto.RequestPacket)(nil)) {
 		msg, err := anypb.UnmarshalNew(audit.Request, auditUnmarshalOpts)
 		if err == nil {
-			req := msg.(*proto.RequestPacket)
+			request = msg.(*proto.RequestPacket)
+		}
+	}
 
-			if req.GetUserTaskType() != nil {
-				userTask := req.GetUserTaskType()
-				if audit.Response != nil && audit.Response.MessageIs((*proto.ResponsePacket)(nil)) {
-					if m, e := anypb.UnmarshalNew(audit.Response, auditUnmarshalOpts); e == nil {
-						res := m.(*proto.ResponsePacket)
-						if res.GetExtraData() != "" {
-							return fmt.Sprintf("User Task: %s -> %s", userTask.GetUserTaskTypes().String(), res.GetExtraData())
-						}
-					}
-				}
-				return fmt.Sprintf("User Task: %s", userTask.GetUserTaskTypes().String())
+	if audit.Response != nil && audit.Response.MessageIs((*proto.ResponsePacket)(nil)) {
+		msg, err := anypb.UnmarshalNew(audit.Response, auditUnmarshalOpts)
+		if err == nil {
+			response = msg.(*proto.ResponsePacket)
+			if response.GetStatus() == "error" {
+				return response.GetErrorCause()
 			}
+		}
+	}
 
-			if req.GetGroupTaskType() != nil {
-				return fmt.Sprintf("Group Task: %s", req.GetGroupTaskType().GetGroupTaskTypes().String())
-			}
+	if request == nil || response == nil {
+		return "No discrete parameters"
+	}
 
-			if req.GetNodeTaskType() != proto.TaskNodeTypes_TYPE_NODE_NONE {
-				nodeTask := req.GetNodeTaskType()
-				shortWorkerID := ""
-				if req.GetWorker() != nil && len(req.GetWorker()) > 0 && req.GetWorker()[0].GetWorkerId() != "" {
-					wid := req.GetWorker()[0].GetWorkerId()
-					if len(wid) > 8 {
-						shortWorkerID = " (Worker: " + wid[:8] + ")"
-					} else {
-						shortWorkerID = " (Worker: " + wid + ")"
-					}
-				}
-
-				switch nodeTask {
-				case proto.TaskNodeTypes_TYPE_NODE_EXECUTE_SHELL:
-					return fmt.Sprintf("[Node Execution] Remote Bash Shell: '%s' -> Fin: successful", req.GetExtraData())
-				case proto.TaskNodeTypes_TYPE_NODE_DISCONN_WORKER:
-					return "[Node Topology] Terminated Connection for Worker" + shortWorkerID
-				default:
-					return fmt.Sprintf("[Node Action] %s", nodeTask.String())
+	if request.GetUserTaskType() != nil {
+		userTask := request.GetUserTaskType()
+		if audit.Response != nil && audit.Response.MessageIs((*proto.ResponsePacket)(nil)) {
+			if m, e := anypb.UnmarshalNew(audit.Response, auditUnmarshalOpts); e == nil {
+				res := m.(*proto.ResponsePacket)
+				if res.GetExtraData() != "" {
+					return fmt.Sprintf("User Task: %s -> %s", userTask.GetUserTaskTypes().String(), res.GetExtraData())
 				}
 			}
+		}
+		return fmt.Sprintf("User Task: %s", userTask.GetUserTaskTypes().String())
+	}
 
-			if req.GetAppsTaskType() != proto.TaskAppsTypes_TYPE_APP_NONE {
-				appTask := req.GetAppsTaskType()
-				appNameInfo := ""
-				if req.GetExtraData() != "" {
-					appNameInfo = " -> Asset ID: " + req.GetExtraData()
-				}
+	if request.GetGroupTaskType() != nil {
+		return fmt.Sprintf("Group Task: %s", request.GetGroupTaskType().GetGroupTaskTypes().String())
+	}
 
-				switch appTask {
-				case proto.TaskAppsTypes_TYPE_APP_REGISTER:
-					return "[App Configuration] Registered New Asset Definition" + appNameInfo
-				case proto.TaskAppsTypes_TYPE_APP_DELETE:
-					return "[App Action] Purged Application Asset Permanent Block" + appNameInfo
-				case proto.TaskAppsTypes_TYPE_APP_PKG_PARSE:
-					return "[App Package] Parsed Tarball Configuration Spec" + appNameInfo
-				case proto.TaskAppsTypes_TYPE_APP_PKG_CREATE:
-					return "[App Package] Created Deployment Tarball Bundle -> SHA256 Match"
-				default:
-					return fmt.Sprintf("[App Action] %s", appTask.String())
-				}
+	if request.GetDeployTaskType() != proto.TaskDeployTypes_TYPE_DEPLOY_NONE {
+		deployTask := request.GetDeployTaskType()
+
+		switch deployTask {
+		case proto.TaskDeployTypes_TYPE_DEPLOY_PUSH_VERSION:
+			return fmt.Sprintf("[Deploy] Pushed on worker %s: %s", logger.ShortHash(request.GetWorker()[0].GetWorkerId()), request.GetAppInfoFetch())
+		case proto.TaskDeployTypes_TYPE_DEPLOY_SET_VERSION:
+			return fmt.Sprintf("[Deploy] Set/Unset on worker %s: %s", logger.ShortHash(request.GetWorker()[0].GetWorkerId()), request.GetAppInfoFetch())
+		case proto.TaskDeployTypes_TYPE_DEPLOY_DEL_VERSION:
+			return fmt.Sprintf("[Deploy] Delete on worker %s: %s", logger.ShortHash(request.GetWorker()[0].GetWorkerId()), request.GetAppInfoFetch())
+		}
+	}
+
+	if request.GetNodeTaskType() != proto.TaskNodeTypes_TYPE_NODE_NONE {
+		nodeTask := request.GetNodeTaskType()
+		shortWorkerID := ""
+		if request.GetWorker() != nil && len(request.GetWorker()) > 0 && request.GetWorker()[0].GetWorkerId() != "" {
+			wid := request.GetWorker()[0].GetWorkerId()
+			if len(wid) > 8 {
+				shortWorkerID = " (Worker: " + wid[:8] + ")"
+			} else {
+				shortWorkerID = " (Worker: " + wid + ")"
 			}
+		}
+
+		switch nodeTask {
+		case proto.TaskNodeTypes_TYPE_NODE_EXECUTE_SHELL:
+
+			resultMsg := "successful"
+			resultObj := response.GetWorkerResponse()[0].GetTaskResult()
+
+			if !resultObj.GetResultSuccessful() {
+				resultMsg = fmt.Sprintf("failed, error is \"%s\"", resultObj.GetErrorMessage())
+			}
+
+			return fmt.Sprintf("[Node Execution] Remote Bash Shell: '%s' -> Fin: %s", request.GetExtraData(), resultMsg)
+		case proto.TaskNodeTypes_TYPE_NODE_DISCONN_WORKER:
+			return "[Node Topology] Terminated Connection for Worker" + shortWorkerID
+		default:
+			return fmt.Sprintf("[Node Action] %s", nodeTask.String())
+		}
+	}
+
+	if request.GetAppsTaskType() != proto.TaskAppsTypes_TYPE_APP_NONE {
+		appTask := request.GetAppsTaskType()
+		appNameInfo := ""
+		if request.GetExtraData() != "" {
+			appNameInfo = " -> Asset ID: " + request.GetExtraData()
+		}
+
+		switch appTask {
+		case proto.TaskAppsTypes_TYPE_APP_REGISTER:
+			return "[App Configuration] Registered New Asset Definition" + appNameInfo
+		case proto.TaskAppsTypes_TYPE_APP_DELETE:
+			return "[App Action] Purged Application Asset Permanent Block" + appNameInfo
+		case proto.TaskAppsTypes_TYPE_APP_PKG_PARSE:
+			return "[App Package] Parsed Tarball Configuration Spec" + appNameInfo
+		case proto.TaskAppsTypes_TYPE_APP_PKG_CREATE:
+			return "[App Package] Created Deployment Tarball Bundle -> SHA256 Match"
+		default:
+			return fmt.Sprintf("[App Action] %s", appTask.String())
 		}
 	}
 
@@ -152,17 +181,28 @@ func PrintAuditTable(logs []*proto.AuditLogData) {
 		}
 
 		tm := time.UnixMilli(int64(audit.GetTimestamp()))
-		timeStr := tm.Format("2006-01-02 15:04:05")
-
+		timeStr := tm.Format(time.DateTime)
 		statusStr := "OK"
+
 		if audit.Response != nil && audit.Response.MessageIs((*proto.ResponsePacket)(nil)) {
 			if m, err := anypb.UnmarshalNew(audit.Response, auditUnmarshalOpts); err == nil {
-				if m.(*proto.ResponsePacket).GetStatus() == "error" {
-					statusStr = "ERROR"
+				response := m.(*proto.ResponsePacket)
+				if response.GetStatus() == "error" {
+					statusStr = "ERROR_SERVER"
+					goto print_audit
+				}
+
+				if strings.HasPrefix(audit.GetAction().String(), "NODE_") && len(response.GetWorkerResponse()) > 0 {
+					workerResponse := response.GetWorkerResponse()[0]
+					if !workerResponse.GetTaskResult().GetResultSuccessful() && workerResponse.GetTaskResult().GetErrorMessage() != "" {
+						statusStr = "ERROR_WORKER"
+						goto print_audit
+					}
 				}
 			}
 		}
 
+	print_audit:
 		operator := audit.GetOperator()
 		if operator == "$NO_USER" {
 			operator = "(Anonymous)"
