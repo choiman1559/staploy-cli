@@ -121,6 +121,12 @@ func (a *StaFileTask) processBuild(builds []*Build) error {
 			{"riscv64", build.Target_riscv64, func(p string) { buildCmd.Riscv64 = p }},
 			{"mipsel", build.Target_mipsel, func(p string) { buildCmd.Mipsel = p }},
 			{"mips64el", build.Target_mips64el, func(p string) { buildCmd.Mips64el = p }},
+			{"mips", build.Target_mips, func(p string) { buildCmd.Mips = p }},
+			{"mips64", build.Target_mips64, func(p string) { buildCmd.Mips64 = p }},
+			{"ppc64", build.Target_ppc64, func(p string) { buildCmd.Ppc64 = p }},
+			{"ppc64le", build.Target_ppc64le, func(p string) { buildCmd.Ppc64le = p }},
+			{"s390x", build.Target_s390x, func(p string) { buildCmd.S390x = p }},
+			{"loong64", build.Target_loong64, func(p string) { buildCmd.Loong64 = p }},
 		}
 
 		for _, arch := range arches {

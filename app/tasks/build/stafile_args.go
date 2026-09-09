@@ -140,6 +140,12 @@ type Build struct {
 	Target_riscv64  *BuildTarget `hcl:"riscv64,block"`
 	Target_mipsel   *BuildTarget `hcl:"mipsel,block"`
 	Target_mips64el *BuildTarget `hcl:"mips64el,block"`
+	Target_mips     *BuildTarget `hcl:"mips,block"`
+	Target_mips64   *BuildTarget `hcl:"mips64,block"`
+	Target_ppc64    *BuildTarget `hcl:"ppc64,block"`
+	Target_ppc64le  *BuildTarget `hcl:"ppc64le,block"`
+	Target_s390x    *BuildTarget `hcl:"s390x,block"`
+	Target_loong64  *BuildTarget `hcl:"loong64,block"`
 }
 
 type BuildTarget struct {

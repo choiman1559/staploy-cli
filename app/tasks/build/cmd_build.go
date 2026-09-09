@@ -329,6 +329,12 @@ func (a *PkgCmdTask) preCheckDirExists() error {
 		{a.CmdArgs.Riscv64, proto.CpuArch_riscv64},
 		{a.CmdArgs.Mipsel, proto.CpuArch_mipsel},
 		{a.CmdArgs.Mips64el, proto.CpuArch_mips64el},
+		{a.CmdArgs.Mips, proto.CpuArch_mips},
+		{a.CmdArgs.Mips64, proto.CpuArch_mips64},
+		{a.CmdArgs.Ppc64, proto.CpuArch_ppc64},
+		{a.CmdArgs.Ppc64le, proto.CpuArch_ppc64le},
+		{a.CmdArgs.S390x, proto.CpuArch_s390x},
+		{a.CmdArgs.Loong64, proto.CpuArch_loong64},
 	}
 
 	for _, t := range targets {

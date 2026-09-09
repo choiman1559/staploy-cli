@@ -134,6 +134,12 @@ type BuildCmd struct {
 	Riscv64  string `arg:"--riscv64" help:"specifies directory of riscv64 executable"`
 	Mipsel   string `arg:"--mipsel" help:"specifies directory of mipsel executable"`
 	Mips64el string `arg:"--mips64el" help:"specifies directory of mips64el executable"`
+	Mips     string `arg:"--mips" help:"specifies directory of mips executable"`
+	Mips64   string `arg:"--mips64" help:"specifies directory of mips64 executable"`
+	Ppc64    string `arg:"--ppc64" help:"specifies directory of ppc64 executable"`
+	Ppc64le  string `arg:"--ppc64le" help:"specifies directory of ppc64el executable"`
+	S390x    string `arg:"--s390x" help:"specifies directory of s390x executable"`
+	Loong64  string `arg:"--loong64" help:"specifies directory of loong64 executable"`
 	Share    string `arg:"--share" help:"specifies directory of shared executable and resources"`
 
 	Executable  []string `arg:"-e,separate" help:"specifies names of executable and resources that will be linked on target worker"`
