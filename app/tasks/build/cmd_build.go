@@ -29,7 +29,12 @@ type PkgCmdTask struct {
 
 	StaFileAliasName string
 	StaFileTask      *StaFileTask
+	isShareOnly      bool
 }
+
+const (
+	DIR_PLACEHOLDER_SHARE_ONLY = "$SHARE_ONLY"
+)
 
 func (a *PkgCmdTask) MainCmd() error {
 	a.TargetPathByArch = make(map[proto.CpuArch]string)
@@ -120,7 +125,7 @@ func (a *PkgCmdTask) startPacking() error {
 func (a *PkgCmdTask) writePkgHeader(tw *tar.Writer) error {
 	header := &proto.PackageHeader{
 		FormatVersion: consts.PACKAGE_FORMAT_VERSION,
-		ShareOnly:     false,
+		ShareOnly:     a.isShareOnly,
 		PackageInfo:   a.baseAppInfo,
 	}
 
@@ -151,6 +156,13 @@ func (a *PkgCmdTask) writePkgHeader(tw *tar.Writer) error {
 func (a *PkgCmdTask) calculateVerHash(arch proto.CpuArch) error {
 	srcPath := a.TargetPathByArch[arch]
 	var binaries []*proto.BinaryInfo
+
+	if arch != proto.CpuArch_UNKNOWN && srcPath == DIR_PLACEHOLDER_SHARE_ONLY {
+		a.TargetHashVersion[arch] = &proto.Version{
+			EntryBinaries: make([]*proto.BinaryInfo, 0),
+		}
+		return nil
+	}
 
 	for _, execFileName := range a.CmdArgs.Executable {
 		hasSharedExec, ok := a.ShareExecHash[execFileName]
@@ -219,54 +231,60 @@ func (a *PkgCmdTask) addArchDir(arch proto.CpuArch, tw *tar.Writer) error {
 	version := a.TargetHashVersion[arch]
 
 	tarDirPath := archToString(arch)
-	err := filepath.WalkDir(srcPath, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		info, err := d.Info()
-		if err != nil {
-			return err
-		}
-
-		header, err := tar.FileInfoHeader(info, info.Name())
-		if err != nil {
-			return err
-		}
-
-		relPath, err := filepath.Rel(srcPath, path)
-		if err != nil {
-			return err
-		}
-
-		header.Name = filepath.ToSlash(filepath.Join(tarDirPath, relPath))
-
-		if d.IsDir() {
-			header.Name += "/"
-		}
-
-		if err := tw.WriteHeader(header); err != nil {
-			return err
-		}
-
-		if !d.IsDir() {
-			file, err := os.Open(path)
+	if srcPath != DIR_PLACEHOLDER_SHARE_ONLY {
+		err := filepath.WalkDir(srcPath, func(path string, d os.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			defer func(file *os.File) {
-				err := file.Close()
-				if err != nil {
-					return
-				}
-			}(file)
 
-			if _, err := io.Copy(tw, file); err != nil {
+			info, err := d.Info()
+			if err != nil {
 				return err
 			}
+
+			header, err := tar.FileInfoHeader(info, info.Name())
+			if err != nil {
+				return err
+			}
+
+			relPath, err := filepath.Rel(srcPath, path)
+			if err != nil {
+				return err
+			}
+
+			header.Name = filepath.ToSlash(filepath.Join(tarDirPath, relPath))
+
+			if d.IsDir() {
+				header.Name += "/"
+			}
+
+			if err := tw.WriteHeader(header); err != nil {
+				return err
+			}
+
+			if !d.IsDir() {
+				file, err := os.Open(path)
+				if err != nil {
+					return err
+				}
+				defer func(file *os.File) {
+					err := file.Close()
+					if err != nil {
+						return
+					}
+				}(file)
+
+				if _, err := io.Copy(tw, file); err != nil {
+					return err
+				}
+			}
+			return nil
+		})
+
+		if err != nil {
+			return err
 		}
-		return nil
-	})
+	}
 
 	content, err := protojson.Marshal(version)
 	if err != nil {
@@ -334,7 +352,16 @@ func (a *PkgCmdTask) preCheckDirExists() error {
 	}
 
 	if !oneOfTargetSpecified {
-		return fmt.Errorf("no build target specified")
+		if shareExists {
+			logger.Tip("No target arch but share detected, building as shareOnly package.")
+			a.isShareOnly = true
+
+			for _, t := range targets {
+				a.TargetPathByArch[t.arch] = DIR_PLACEHOLDER_SHARE_ONLY
+			}
+		} else {
+			return fmt.Errorf("no build target specified")
+		}
 	}
 	return nil
 }
