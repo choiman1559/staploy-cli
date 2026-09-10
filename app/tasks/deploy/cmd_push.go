@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"fmt"
 	"staploy-cli/app/cmds"
 	"staploy-cli/app/consts"
 	"staploy-cli/app/logger"
@@ -34,7 +35,7 @@ func (task *PushCmdTask) MainCmd() error {
 
 	if task.CmdArgs.MaxThread < 1 {
 		for _, workerId := range workers {
-			err := task.requestPush(workerId)
+			_, err := task.requestPush(workerId)
 			if err != nil {
 				return err
 			}
@@ -54,7 +55,7 @@ func (task *PushCmdTask) MainCmd() error {
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			err := task.requestPush(wId)
+			_, err := task.requestPush(wId)
 			if err != nil {
 				errChan <- err
 			}
@@ -70,28 +71,29 @@ func (task *PushCmdTask) MainCmd() error {
 	return nil
 }
 
-func (task *PushCmdTask) requestPush(workerId string) error {
+func (task *PushCmdTask) requestPush(workerId string) (string, error) {
 	request := task.CreateDefPacket(workerId)
 	request.TaskType = &proto.RequestPacket_DeployTaskType{DeployTaskType: proto.TaskDeployTypes_TYPE_DEPLOY_PUSH_VERSION}
 	request.AppInfoFetch = append(request.AppInfoFetch, task.AppInfo)
 
 	response, err := task.PostRequest(request)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if response.GetStatus() == consts.StatusOK && response.GetWorkerResponse()[0].GetTaskResult().GetResultSuccessful() {
 		logger.Info("Pushed package: \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(response.GetExtraData()), workerId)
-	} else {
-		if task.CmdArgs.Version != "" {
-			logger.Error("Failed to push \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(task.CmdArgs.Version), workerId)
-		} else {
-			logger.Error("Failed to push \"%s\" at worker %s", task.CmdArgs.AppName, workerId)
-		}
-
-		if len(response.GetWorkerResponse()) > 0 {
-			logger.Error("Error cause is: %s", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
-		}
+		return response.GetExtraData(), nil
 	}
-	return nil
+
+	if task.CmdArgs.Version != "" {
+		logger.Error("Failed to push \"%s\" (%s) at worker %s", task.CmdArgs.AppName, logger.VersionNamePrefix(task.CmdArgs.Version), workerId)
+	} else {
+		logger.Error("Failed to push \"%s\" at worker %s", task.CmdArgs.AppName, workerId)
+	}
+
+	if len(response.GetWorkerResponse()) > 0 {
+		return "", fmt.Errorf("error cause is: %s", response.GetWorkerResponse()[0].GetTaskResult().GetErrorMessage())
+	}
+	return "", fmt.Errorf("no error cause provided")
 }

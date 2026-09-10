@@ -65,6 +65,13 @@ type PushCmd struct {
 	MaxThread uint8    `arg:"-t,--max-thread" help:"maximum number of threads to push, set value 0 as sequential push" default:"16"`
 }
 
+type DeployCmd struct {
+	WorkerId  []string `arg:"-w,--worker-id,required" help:"worker id to install new package"`
+	AppName   string   `arg:"-n,--app-name, required" help:"name of app to deploy"`
+	Version   string   `arg:"-e,--version" help:"version of app to deploy"`
+	LocalOnly bool     `arg:"--local-only" help:"only find package on local server, not pull from remote repository"`
+}
+
 type RemoveCmd struct {
 	WorkerId   []string `arg:"-w,--worker-id,required" help:"worker id to remove package"`
 	AppName    string   `arg:"-n,--app-name" help:"name of app to remove"`
@@ -288,6 +295,7 @@ var Args struct {
 	Remove *RemoveCmd `arg:"subcommand:remove" help:"remove a package from a remote worker"`
 	Set    *SetCmd    `arg:"subcommand:set" help:"set a version of package to executable path from a remote worker"`
 	Unset  *UnsetCmd  `arg:"subcommand:unset" help:"unset a version of package to executable path from a remote worker"`
+	Deploy *DeployCmd `arg:"subcommand:deploy" help:"deploy a package to a remote worker"`
 
 	Group    *GroupCmd    `arg:"subcommand:group" help:"manage groups of workers"`
 	Build    *BuildCmd    `arg:"subcommand:build" help:"build a distributable package"`
