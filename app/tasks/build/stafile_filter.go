@@ -49,19 +49,28 @@ func (a *StaFileTask) evalFilter(workerInfo *proto.WorkerInfo, where *Where) (bo
 		arch := workerInfo.GetCpuArch().String()
 
 		matched := false
+		hasPositive := false
+
 		for _, filter := range where.Arch {
 			ok, err := evalStringFilter(arch, filter)
 			if err != nil {
 				return false, fmt.Errorf("arch filter %q: %w", filter, err)
 			}
 
+			if strings.HasPrefix(filter, UNIVERSE_FILTER_NOT) {
+				if !ok {
+					return false, nil
+				}
+				continue
+			}
+
+			hasPositive = true
 			if ok {
 				matched = true
-				break
 			}
 		}
 
-		if !matched {
+		if hasPositive && !matched {
 			return false, nil
 		}
 	}
@@ -99,7 +108,66 @@ func (a *StaFileTask) evalFilter(workerInfo *proto.WorkerInfo, where *Where) (bo
 		}
 	}
 
+	if where.CpuBigEndian != nil {
+		if workerInfo.WorkerFlags.GetCPU_BIG_ENDIAN() != *where.CpuBigEndian {
+			return false, nil
+		}
+	}
+
+	if len(where.CpuCapabilities) > 0 {
+		workerCapabilities := workerInfo.WorkerFlags.GetCPU_CAPABILITIES()
+		for _, filterCapa := range where.CpuCapabilities {
+			ok, err := containsStringFilter(workerCapabilities, filterCapa)
+			if err != nil {
+				return false, fmt.Errorf("cpu capability filter %q: %w", filterCapa, err)
+			}
+
+			if !ok {
+				return false, nil
+			}
+		}
+	}
+
+	if len(where.CpuFlags) > 0 {
+		workerFlags := workerInfo.WorkerFlags.GetCPU_FLAGS()
+		for _, filterFlag := range where.CpuFlags {
+			ok, err := containsStringFilter(workerFlags, filterFlag)
+			if err != nil {
+				return false, fmt.Errorf("cpu flag filter %q: %w", filterFlag, err)
+			}
+
+			if !ok {
+				return false, nil
+			}
+		}
+	}
+
 	return true, nil
+}
+
+func containsStringFilter(values []string, filter string) (bool, error) {
+	negative := strings.HasPrefix(filter, UNIVERSE_FILTER_NOT)
+
+	if negative {
+		filter = strings.TrimPrefix(filter, UNIVERSE_FILTER_NOT)
+	}
+
+	for _, value := range values {
+		ok, err := evalStringFilterPositive(value, filter)
+		if err != nil {
+			return false, err
+		}
+
+		if negative && ok {
+			return false, nil
+		}
+
+		if !negative && ok {
+			return true, nil
+		}
+	}
+
+	return negative, nil
 }
 
 func evalStringFilter(value string, filter string) (bool, error) {

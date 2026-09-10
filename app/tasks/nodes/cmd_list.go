@@ -58,7 +58,10 @@ func WorkerInfoFormatter(workerInfo *proto.WorkerInfo, detail bool, index int) [
 		workerData = append(workerData, fmt.Sprintf(" └─ Additional flags\n"))
 		workerData = append(workerData, fmt.Sprintf("     ├─ Default buffer size: %s bytes\n", logger.FormatWithCommas(workerInfo.WorkerFlags.BUFFER_SIZE)))
 		workerData = append(workerData, fmt.Sprintf("     ├─ Remote shell enabled: %v\n", workerInfo.WorkerFlags.USE_REMOTE_SHELL))
-		workerData = append(workerData, fmt.Sprintf("     └─ Skip executable integrity check: %v\n", workerInfo.WorkerFlags.SKIP_HASH_VERIFICATION))
+		workerData = append(workerData, fmt.Sprintf("     ├─ Skip executable integrity check: %v\n", workerInfo.WorkerFlags.SKIP_HASH_VERIFICATION))
+		workerData = append(workerData, fmt.Sprintf("     ├─ Is Cpu Big-Endian: %v\n", workerInfo.WorkerFlags.CPU_BIG_ENDIAN))
+		workerData = append(workerData, fmt.Sprintf("     ├─ Cpu capabilities: %v\n", workerInfo.WorkerFlags.GetCPU_CAPABILITIES()))
+		workerData = append(workerData, fmt.Sprintf("     └─ Cpu flags: %v\n", workerInfo.WorkerFlags.GetCPU_FLAGS()))
 	} else {
 		workerData = append(workerData, fmt.Sprintf("Worker #%d %s (%s)\n", index, workerInfo.GetWorkerId(), workerInfo.GetWorkerName()))
 	}

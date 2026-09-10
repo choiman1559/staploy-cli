@@ -17,6 +17,12 @@ build "alias:staploy-build" {
   riscv64 { path = "out/riscv64" }
   mipsel { path = "out/mipsle" }
   mips64el { path = "out/mips64le" }
+  mips { path = "out/mips" }
+  mips64 { path = "out/mips64" }
+  ppc64 { path = "out/ppc64" }
+  ppc64le { path = "out/ppc64le" }
+  s390x { path = "out/s390x" }
+  loong64 { path = "out/loong64" }
 }
 
 configure {
@@ -31,6 +37,10 @@ manage "alias:staploy-build" {
 
 target "staploy-deploy" {
   workers = ["group:all"]
+
+  where {
+    arch = ["!arm", "!aarch64", "!mips"]
+  }
 
   # First unlink current activated version
   unset "alias:staploy-build" {

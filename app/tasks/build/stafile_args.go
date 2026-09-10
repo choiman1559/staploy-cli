@@ -51,8 +51,11 @@ type Where struct {
 	Memory     string   `hcl:"memory,optional"`
 	WorkingDir string   `hcl:"workdir,optional"`
 
-	ShellEnabled       *bool `hcl:"shell_enable,optional"`
-	SkipIntegrityCheck *bool `hcl:"integrity_skip,optional"`
+	ShellEnabled       *bool    `hcl:"shell_enable,optional"`
+	SkipIntegrityCheck *bool    `hcl:"integrity_skip,optional"`
+	CpuBigEndian       *bool    `hcl:"cpu_big_endian,optional"`
+	CpuCapabilities    []string `hcl:"cpu_capability,optional"`
+	CpuFlags           []string `hcl:"cpu_flags,optional"`
 }
 
 type DeployTask struct {

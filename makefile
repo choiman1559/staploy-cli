@@ -16,12 +16,12 @@ M_ARGS := $(foreach file,$(PROTO_FILES),--go_opt=M$(subst $(SRC_DIR)/,,$(file))=
 .PHONY: all proto buildPkg clean buildAll $(ARCHES)
 all: proto buildAll buildPkg clean
 
-ARCHES := 386 amd64 arm arm64 riscv64 mipsle mips64le
+ARCHES := 386 amd64 arm arm64 riscv64 mipsle mips64le mips mips64 ppc64 ppc64le s390x loong64
 buildAll: $(ARCHES)
 createAll: buildAll buildPkg
 
 $(ARCHES):
-	CGO_ENABLED=0 GOOS=linux GOARCH=$@ go build -ldflags="-s -w" -o $(BUILD_OUT_DIR)/$@/staploy-cli staploy-cli
+	CGO_ENABLED=0 GOOS=linux GOMIPS=softfloat GOARCH=$@ go build -ldflags="-s -w" -o $(BUILD_OUT_DIR)/$@/staploy-cli staploy-cli
 
 buildPkg:
 	$(CLI_TOOL) file -f ./build_pkg.hcl -v
