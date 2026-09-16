@@ -17,7 +17,7 @@ type RegistryPushLocalTask struct {
 
 func (task *RegistryPushLocalTask) MainCmd() error {
 	task.OverrideConnType(consts.ConnTypeRegistry)
-	logger.Process("Uploading file " + task.CmdArgs.PackageFile)
+	logger.Process("Uploading file %s on server %s:%d", task.CmdArgs.PackageFile, task.DefaultArgs.Address, task.DefaultArgs.Port)
 	blobToken, err := task.UploadFile(task.CmdArgs.PackageFile)
 	if err != nil {
 		return err

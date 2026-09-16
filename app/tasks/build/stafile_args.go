@@ -102,7 +102,10 @@ type Manage struct {
 	Create  *CreateTask `hcl:"create,block"`
 	Upload  *UploadTask `hcl:"upload,block"`
 	Delete  *DeleteTask `hcl:"delete,block"`
-	Pull    *PullTask   `hcl:"pull,block"`
+
+	Pull   *RegistryPullTask   `hcl:"pull,block"`
+	Push   *RegistryPushTask   `hcl:"push,block"`
+	Update *RegistryUpdateTask `hcl:"update,block"`
 }
 
 type CreateTask struct {
@@ -117,10 +120,19 @@ type DeleteTask struct {
 	Versions []string `hcl:"versions,optional"`
 }
 
-type PullTask struct {
+type RegistryPullTask struct {
 	AppName    string `hcl:"name,label"`
 	Version    string `hcl:"version,optional"`
 	Repository string `hcl:"repository,optional"`
+}
+
+type RegistryPushTask struct {
+	PackageFile string    `hcl:"path,optional"`
+	RepoUrl     *[]string `hcl:"repo_url,optional"`
+}
+
+type RegistryUpdateTask struct {
+	RepoUrl []string `hcl:"repo_url,optional"`
 }
 
 type Build struct {

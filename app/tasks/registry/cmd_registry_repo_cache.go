@@ -34,15 +34,21 @@ func (task *RegistryUpdateCacheTask) MainCmd() error {
 		return errors.New("update repository package cache failed")
 	}
 
+	var isFailed = false
 	for _, repoUrl := range response.GetRegistryResponse().RepositoryUrl {
 		data := strings.Split(repoUrl, "$")
 		if data[1] != consts.StatusOK {
 			logger.Error("Fetch failed: %s (cause: %s)", data[0], data[1])
+			isFailed = true
 			continue
 		}
 		logger.Info("Fetch ok: %s", data[0])
 	}
 
-	logger.Info("Successfully finished update repository cache")
+	if isFailed {
+		logger.Warn("At least one repository package cache failed to update")
+	} else {
+		logger.Info("Successfully finished update repository cache")
+	}
 	return nil
 }
