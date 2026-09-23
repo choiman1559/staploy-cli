@@ -34,7 +34,6 @@ type CmdTaskInterface interface {
 	MainCmd() error
 }
 
-var DisableTls bool
 var SkipValidation bool
 var UserJwtToken string
 var WorkersIdCache map[string]string
@@ -46,6 +45,7 @@ type DefaultArgs struct {
 	Port            int
 	Verbose         bool
 	UseWorkerIdOnly bool
+	DisableTls      bool
 }
 
 type CmdTask[T CmdTypes] struct {
@@ -55,8 +55,7 @@ type CmdTask[T CmdTypes] struct {
 	connType    string
 }
 
-func InitCache(disableTls bool, skipValidation bool, userJwtToken string) {
-	DisableTls = disableTls
+func InitCache(skipValidation bool, userJwtToken string) {
 	SkipValidation = skipValidation
 	UserJwtToken = userJwtToken
 
@@ -262,7 +261,7 @@ func (a *CmdTask[T]) PutRequest(body *[]byte) (*http.Response, error) {
 //goland:noinspection HttpUrlsUsage
 func (a *CmdTask[T]) GetServerAddr() string {
 	httpPrefix := "https://"
-	if DisableTls {
+	if a.DefaultArgs.DisableTls {
 		httpPrefix = "http://"
 	}
 

@@ -163,6 +163,7 @@ func (a *StaFileTask) ParseStaFile(staployFile *StaployFile) error {
 		Port:            a.ServerPort,
 		UseWorkerIdOnly: staployFile.Config.UseIdOnly,
 		Verbose:         a.DefaultArgs.Verbose,
+		DisableTls:      a.DefaultArgs.DisableTls,
 	}
 
 	if defaultArgs.Address == "" {

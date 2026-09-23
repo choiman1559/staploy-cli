@@ -56,10 +56,10 @@ func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage
 			if manage.Push.PackageFile == "" {
 				logger.Error("No package file specified for push of app \"%s\"", manage.AppName)
 			} else if manage.Push.RepoUrl != nil {
-				splitURL := func(raw string) (string, int, error) {
+				splitURL := func(raw string) (string, int, bool, error) {
 					u, err := url.Parse(raw)
 					if err != nil {
-						return "", 0, err
+						return "", 0, true, err
 					}
 
 					host := u.Hostname()
@@ -68,14 +68,23 @@ func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage
 					if p := u.Port(); p != "" {
 						port, err = strconv.Atoi(p)
 						if err != nil {
-							return "", 0, err
+							return "", 0, true, err
 						}
 					}
-					return host, port, nil
+
+					isHttp := !strings.HasPrefix(u.Scheme, "https")
+					if port == 0 {
+						if isHttp {
+							port = 80
+						} else {
+							port = 443
+						}
+					}
+					return host, port, isHttp, nil
 				}
 
 				for _, addr := range *manage.Push.RepoUrl {
-					splitAddr, splitPort, err := splitURL(addr)
+					splitAddr, splitPort, isHttp, err := splitURL(addr)
 					if err != nil {
 						logger.Error("Error parsing repo url \"%s\": %v", addr, err)
 						continue
@@ -86,6 +95,7 @@ func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage
 						Port:            splitPort,
 						Verbose:         defArgs.Verbose,
 						UseWorkerIdOnly: defArgs.UseWorkerIdOnly,
+						DisableTls:      isHttp,
 					}
 
 					t := &registry.RegistryPushLocalTask{}
@@ -93,7 +103,7 @@ func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage
 
 					err = t.MainCmd()
 					if err != nil {
-						logger.Error("Error pushing app \"%s\" to remote registry \"%s\", error: %v", manage.AppName, addr, err)
+						logger.Error("Error pushing app \"%s\" to remote registry \"%s\", cause: %v", manage.AppName, addr, err)
 					}
 				}
 			} else {

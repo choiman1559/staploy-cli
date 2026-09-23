@@ -25,9 +25,10 @@ func HandleProcessInvoke() {
 		Port:            cmds.Args.Port,
 		Verbose:         cmds.Args.Verbose,
 		UseWorkerIdOnly: cmds.Args.UseIdOnly,
+		DisableTls:      cmds.Args.DisableTls,
 	}
 
-	cmds.InitCache(cmds.Args.DisableTls, cmds.Args.SkipValidation, cmds.Args.UserJwtToken)
+	cmds.InitCache(cmds.Args.SkipValidation, cmds.Args.UserJwtToken)
 	var taskInterface cmds.CmdTaskInterface
 
 	checkList := []struct {
