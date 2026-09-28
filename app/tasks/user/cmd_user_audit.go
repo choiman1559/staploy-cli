@@ -157,6 +157,31 @@ func resolvePacketDetails(audit *proto.AuditLogData) string {
 		}
 	}
 
+	if request.GetRegistryTaskType() != nil {
+		registryTask := request.GetRegistryTaskType()
+		if registryTask.GetTaskType() != proto.TaskRegistryTypes_REGISTRY_NONE {
+			switch registryTask.GetTaskType() {
+			case proto.TaskRegistryTypes_TASK_PUSH:
+				return fmt.Sprintf("[Remote] Pushed New Registry: %s", response.GetRegistryResponse().GetAppInfo())
+			case proto.TaskRegistryTypes_TASK_PULL:
+				return fmt.Sprintf("[Remote] Pulled Registry : %s", registryTask.GetAppInfo())
+			case proto.TaskRegistryTypes_TASK_REMOVE:
+				return fmt.Sprintf("[Remote] Removed Registry: %s", registryTask.GetAppInfo())
+
+			case proto.TaskRegistryTypes_LOCAL_PULL_PACKAGE:
+				return fmt.Sprintf("[Local] Pulled Registry from Remote: %s", response.GetRegistryResponse())
+			case proto.TaskRegistryTypes_LOCAL_PACKAGE_CACHE_UPDATE:
+				return fmt.Sprintf("[Local] Updated Registry Cache from Remote: %s", response.GetRegistryResponse().GetRepositoryUrl())
+			case proto.TaskRegistryTypes_LOCAL_ADD_REPOSITORY:
+				return fmt.Sprintf("[Local] Added Registry Repository: %s", registryTask.GetRepositoryUrl())
+			case proto.TaskRegistryTypes_LOCAL_REMOVE_REPOSITORY:
+				return fmt.Sprintf("[Local] Removed Registry Repository: %s", registryTask.GetRepositoryUrl())
+			case proto.TaskRegistryTypes_LOCAL_MANAGE_TOKEN_REPOSITORY:
+				return fmt.Sprintf("[Local] Updated Token Repository: %s", registryTask.GetRepositoryUrl())
+			}
+		}
+	}
+
 	return "No discrete parameters"
 }
 
