@@ -98,8 +98,10 @@ func (a *StaFileTask) processManage(defArgs *cmds.DefaultArgs, manages []*Manage
 						DisableTls:      isHttp,
 					}
 
-					t := &registry.RegistryPushLocalTask{}
-					t.Init(repoDefArgs, cmds.RegistryPushLocalCmd{PackageFile: manage.Push.PackageFile}, proto.TaskGroup_TASK_REGISTRY)
+					t := &registry.RegistryPushProxyTask{}
+					t.Init(*defArgs, cmds.RegistryPushLocalCmd{PackageFile: manage.Push.PackageFile}, proto.TaskGroup_TASK_REGISTRY)
+					t.ProxyDefaultArgs = repoDefArgs
+					t.ProxyUrl = addr
 
 					err = t.MainCmd()
 					if err != nil {

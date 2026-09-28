@@ -35,6 +35,14 @@ func (task *RegistryPushLocalTask) MainCmd() error {
 		return err
 	}
 
+	err = PrintRegistryPushResult(response)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func PrintRegistryPushResult(response *proto.ResponsePacket) error {
 	if len(response.GetRegistryResponse().GetAppInfo()) < 1 {
 		if response.GetErrorCause() != "" {
 			return errors.New(response.GetErrorCause())
